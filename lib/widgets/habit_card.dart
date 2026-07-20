@@ -52,23 +52,20 @@ class HabitCard extends ConsumerWidget {
           ),
           GestureDetector(
             onLongPress: () => _confirmDelete(context, ref),
-            child: GestureDetector(
-              onTap: () => ref
-    .read(habitsProvider.notifier)
-    .toggleHabit(habit.id),
-child: AnimatedContainer(
-  duration: const Duration(milliseconds: 300),
-  width: 40,
-  height: 40,
-  decoration: BoxDecoration(
-    color: isCompleted ? Colors.deepPurple : Colors.white10,
-    shape: BoxShape.circle,
-  ),
-  child: Icon(
-    isCompleted ? Icons.check : Icons.circle_outlined,
-    color: isCompleted ? Colors.white : Colors.white54,
-    size: 20,
-                ),
+            onTap: () =>
+                ref.read(habitsProvider.notifier).toggleHabit(habit.id),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 300),
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: isCompleted ? Colors.deepPurple : Colors.white10,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                isCompleted ? Icons.check : Icons.circle_outlined,
+                color: isCompleted ? Colors.white : Colors.white54,
+                size: 20,
               ),
             ),
           ),

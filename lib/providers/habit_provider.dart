@@ -15,7 +15,26 @@ final habitsProvider = StateNotifierProvider<HabitNotifier, List<Habit>>((ref) {
 class HabitNotifier extends StateNotifier<List<Habit>> {
   final Box<Habit> _box;
 
-  HabitNotifier(this._box) : super(_box.values.toList());
+  HabitNotifier(this._box) : super(const []) {
+    refreshAllStreaks();
+  }
+
+  /// Recomputes streaks for every habit so values stored on a previous
+  /// day (e.g. before a missed week) don't display stale. Also called on
+  /// app resume, since a streak can expire while the app sits in memory
+  /// across midnight.
+  void refreshAllStreaks() {
+    for (final habit in _box.values) {
+      final prevCurrent = habit.currentStreak;
+      final prevLongest = habit.longestStreak;
+      _updateStreak(habit);
+      if (habit.currentStreak != prevCurrent ||
+          habit.longestStreak != prevLongest) {
+        habit.save();
+      }
+    }
+    state = _box.values.toList();
+  }
 
   void addHabit(String name, String icon) {
     final habit = Habit(
@@ -49,42 +68,39 @@ void toggleHabit(String id) {
   state = _box.values.toList();
 }
 
-void _updateStreak(Habit habit) {
-  if (habit.completedDates.isEmpty) {
-    habit.currentStreak = 0;
-    return;
-  }
+  void _updateStreak(Habit habit) {
+    // Normalize to UTC dates so day differences are exact even across
+    // daylight-saving transitions (local midnights can be 23/25h apart).
+    final dates = habit.completedDates
+        .map((d) => DateTime.utc(d.year, d.month, d.day))
+        .toSet()
+        .toList()
+      ..sort();
 
-  final dates = habit.completedDates
-      .map((d) => DateTime(d.year, d.month, d.day))
-      .toSet()
-      .toList()
-    ..sort((a, b) => b.compareTo(a));
-
-  // If most recent completion isn't today or yesterday, streak is 0
-  final today = DateTime.now();
-  final todayNormalized = DateTime(today.year, today.month, today.day);
-  final diff = todayNormalized.difference(dates.first).inDays;
-  if (diff > 1) {
-    habit.currentStreak = 0;
-    return;
-  }
-
-  int streak = 1;
-  for (int i = 0; i < dates.length - 1; i++) {
-    final diff = dates[i].difference(dates[i + 1]).inDays;
-    if (diff == 1) {
-      streak++;
-    } else {
-      break;
+    if (dates.isEmpty) {
+      habit.currentStreak = 0;
+      habit.longestStreak = 0;
+      return;
     }
-  }
 
-  habit.currentStreak = streak;
-  if (streak > habit.longestStreak) {
-    habit.longestStreak = streak;
+    int longest = 1;
+    int run = 1;
+    for (int i = 1; i < dates.length; i++) {
+      if (dates[i].difference(dates[i - 1]).inDays == 1) {
+        run++;
+        if (run > longest) longest = run;
+      } else {
+        run = 1;
+      }
+    }
+
+    // The trailing run only counts as the current streak if it's still
+    // alive, i.e. its last completion was today or yesterday.
+    final now = DateTime.now();
+    final today = DateTime.utc(now.year, now.month, now.day);
+    habit.currentStreak = today.difference(dates.last).inDays > 1 ? 0 : run;
+    habit.longestStreak = longest;
   }
-}
 
   void deleteHabit(String id) {
     _box.delete(id);
