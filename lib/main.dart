@@ -8,7 +8,9 @@ import 'screens/home_screen.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Hive.initFlutter();
-  Hive.registerAdapter(HabitAdapter());
+  if (!Hive.isAdapterRegistered(0)) {
+    Hive.registerAdapter(HabitAdapter());
+  }
   await Hive.openBox<Habit>('habits');
   runApp(const ProviderScope(child: MyApp()));
 }

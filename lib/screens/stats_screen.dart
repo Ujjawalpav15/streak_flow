@@ -120,6 +120,8 @@ class _HabitStatCard extends StatelessWidget {
           ),
           const SizedBox(height: 10),
           HeatMap(
+            startDate: DateTime.now().subtract(const Duration(days: 90)),
+            endDate: DateTime.now(),
             datasets: dataset,
             colorMode: ColorMode.color,
             defaultColor: const Color(0xFF2C2C2C),

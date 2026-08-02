@@ -12,49 +12,49 @@ class HabitCard extends ConsumerWidget {
     final notifier = ref.read(habitsProvider.notifier);
     final isCompleted = notifier.isCompletedToday(habit);
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: const Color(0xFF1E1E1E),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: isCompleted ? Colors.deepPurple : Colors.white10,
-          width: 1.5,
-        ),
-      ),
-      child: Row(
-        children: [
-          Text(habit.icon, style: const TextStyle(fontSize: 32)),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  habit.name,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  '🔥 ${habit.currentStreak} day streak',
-                  style: const TextStyle(
-                    color: Colors.orange,
-                    fontSize: 13,
-                  ),
-                ),
-              ],
-            ),
+    return GestureDetector(
+      onLongPress: () => _confirmDelete(context, ref),
+      onTap: () => ref.read(habitsProvider.notifier).toggleHabit(habit.id),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 250),
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: const Color(0xFF1E1E1E),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: isCompleted ? Colors.deepPurple : Colors.white10,
+            width: 1.5,
           ),
-          GestureDetector(
-            onLongPress: () => _confirmDelete(context, ref),
-            onTap: () =>
-                ref.read(habitsProvider.notifier).toggleHabit(habit.id),
-            child: AnimatedContainer(
+        ),
+        child: Row(
+          children: [
+            Text(habit.icon, style: const TextStyle(fontSize: 32)),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    habit.name,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '🔥 ${habit.currentStreak} day streak',
+                    style: const TextStyle(
+                      color: Colors.orange,
+                      fontSize: 13,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            AnimatedContainer(
               duration: const Duration(milliseconds: 300),
               width: 40,
               height: 40,
@@ -68,8 +68,8 @@ class HabitCard extends ConsumerWidget {
                 size: 20,
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

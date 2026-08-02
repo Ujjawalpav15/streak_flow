@@ -64,71 +64,84 @@ void _showAddHabitDialog(BuildContext context, WidgetRef ref) {
 
   showDialog(
     context: context,
-    builder: (context) => AlertDialog(
-      backgroundColor: const Color(0xFF1E1E1E),
-      title: const Text(
-        'Add New Habit',
-        style: TextStyle(color: Colors.white),
-      ),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          TextField(
-            controller: nameController,
-            style: const TextStyle(color: Colors.white),
-            decoration: const InputDecoration(
-              hintText: 'Habit name (e.g. Running)',
-              hintStyle: TextStyle(color: Colors.white38),
-              enabledBorder: UnderlineInputBorder(
-                borderSide: BorderSide(color: Colors.white24),
-              ),
-              focusedBorder: UnderlineInputBorder(
-                borderSide: BorderSide(color: Colors.deepPurple),
-              ),
-            ),
+    builder: (context) => StatefulBuilder(
+      builder: (context, setDialogState) {
+        String? errorMessage;
+
+        return AlertDialog(
+          backgroundColor: const Color(0xFF1E1E1E),
+          title: const Text(
+            'Add New Habit',
+            style: TextStyle(color: Colors.white),
           ),
-          const SizedBox(height: 16),
-          TextField(
-            controller: emojiController,
-            style: const TextStyle(fontSize: 28),
-            maxLength: 2,
-            decoration: const InputDecoration(
-              hintText: 'Pick an emoji',
-              hintStyle: TextStyle(color: Colors.white38),
-              labelText: 'Icon (emoji)',
-              labelStyle: TextStyle(color: Colors.white54),
-              enabledBorder: UnderlineInputBorder(
-                borderSide: BorderSide(color: Colors.white24),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              TextField(
+                controller: nameController,
+                style: const TextStyle(color: Colors.white),
+                decoration: InputDecoration(
+                  hintText: 'Habit name (e.g. Running)',
+                  hintStyle: const TextStyle(color: Colors.white38),
+                  errorText: errorMessage,
+                  enabledBorder: const UnderlineInputBorder(
+                    borderSide: BorderSide(color: Colors.white24),
+                  ),
+                  focusedBorder: const UnderlineInputBorder(
+                    borderSide: BorderSide(color: Colors.deepPurple),
+                  ),
+                ),
               ),
-              focusedBorder: UnderlineInputBorder(
-                borderSide: BorderSide(color: Colors.deepPurple),
+              const SizedBox(height: 16),
+              TextField(
+                controller: emojiController,
+                style: const TextStyle(fontSize: 28),
+                maxLength: 6,
+                decoration: const InputDecoration(
+                  hintText: 'Pick an emoji',
+                  hintStyle: TextStyle(color: Colors.white38),
+                  labelText: 'Icon (emoji)',
+                  labelStyle: TextStyle(color: Colors.white54),
+                  enabledBorder: UnderlineInputBorder(
+                    borderSide: BorderSide(color: Colors.white24),
+                  ),
+                  focusedBorder: UnderlineInputBorder(
+                    borderSide: BorderSide(color: Colors.deepPurple),
+                  ),
+                  counterStyle: TextStyle(color: Colors.white24),
+                ),
               ),
-              counterStyle: TextStyle(color: Colors.white24),
-            ),
+            ],
           ),
-        ],
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text('Cancel',
-              style: TextStyle(color: Colors.white54)),
-        ),
-        ElevatedButton(
-          style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.deepPurple),
-          onPressed: () {
-            final name = nameController.text.trim();
-            final emoji = emojiController.text.trim();
-            if (name.isNotEmpty && emoji.isNotEmpty) {
-              ref.read(habitsProvider.notifier).addHabit(name, emoji);
-              Navigator.pop(context);
-            }
-          },
-          child: const Text('Add',
-              style: TextStyle(color: Colors.white)),
-        ),
-      ],
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel',
+                  style: TextStyle(color: Colors.white54)),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.deepPurple),
+              onPressed: () {
+                final name = nameController.text.trim();
+                final emoji = emojiController.text.trim();
+                if (name.isEmpty) {
+                  setDialogState(() {
+                    errorMessage = 'Habit name cannot be empty';
+                  });
+                  return;
+                }
+                final finalEmoji = emoji.isEmpty ? '⚡' : emoji;
+                ref.read(habitsProvider.notifier).addHabit(name, finalEmoji);
+                Navigator.pop(context);
+              },
+              child: const Text('Add',
+                  style: TextStyle(color: Colors.white)),
+            ),
+          ],
+        );
+      },
     ),
   );
 }
