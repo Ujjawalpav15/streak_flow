@@ -1,189 +1,184 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 import '../models/habit.dart';
 import '../providers/habit_provider.dart';
+import '../theme/app_colors.dart';
+import '../theme/app_spacing.dart';
+import '../theme/app_radius.dart';
+import '../theme/app_typography.dart';
+import '../theme/streak_tiers.dart';
+import '../theme/app_accent.dart';
+import 'dot_matrix_heatmap.dart';
 
-class HabitCard extends ConsumerWidget {
+class HabitCard extends ConsumerStatefulWidget {
   final Habit habit;
   final VoidCallback? onEdit;
+  final VoidCallback? onTap;
 
-  const HabitCard({super.key, required this.habit, this.onEdit});
+  const HabitCard({super.key, required this.habit, this.onEdit, this.onTap});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<HabitCard> createState() => _HabitCardState();
+}
+
+class _HabitCardState extends ConsumerState<HabitCard>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _scaleController;
+
+  @override
+  void initState() {
+    super.initState();
+    _scaleController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 150),
+      lowerBound: 0.85,
+      upperBound: 1.0,
+      value: 1.0,
+    );
+  }
+
+  @override
+  void dispose() {
+    _scaleController.dispose();
+    super.dispose();
+  }
+
+  void _handleTap() {
+    HapticFeedback.mediumImpact();
+    _scaleController.reverse().then((_) {
+      _scaleController.forward();
+    });
+    ref.read(habitsProvider.notifier).toggleHabit(widget.habit.id);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final habit = widget.habit;
     final notifier = ref.read(habitsProvider.notifier);
     final isCompleted = notifier.isCompletedToday(habit);
-    final streakColor = habit.streakColor;
+    
+    final tierColor = StreakTiers.getTierColor(habit.currentStreak);
+    final tierEmoji = StreakTiers.getTierEmoji(habit.currentStreak);
+    final accent = Theme.of(context).extension<AppAccent>()!;
+
+    final now = DateTime.now();
+    // 2 rows of 15 columns = 30 days
+    final rangeEnd = DateTime(now.year, now.month, now.day);
+    final rangeStart = DateTime(now.year, now.month, now.day - 29);
 
     return GestureDetector(
-      onLongPress: () => _showHabitOptionsSheet(context, ref),
-      onTap: () => notifier.toggleHabit(habit.id),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 250),
-        margin: const EdgeInsets.only(bottom: 14),
-        padding: const EdgeInsets.all(16),
+      onLongPress: () => _showHabitOptionsSheet(context, ref, habit, accent),
+      onTap: widget.onTap,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: AppSpacing.md),
+        padding: const EdgeInsets.all(AppSpacing.md),
         decoration: BoxDecoration(
-          color: isCompleted
-              ? streakColor.withValues(alpha: 0.1)
-              : const Color(0xFF161B26),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: isCompleted
-                ? streakColor.withValues(alpha: 0.8)
-                : Colors.white.withValues(alpha: 0.08),
-            width: isCompleted ? 2.0 : 1.2,
-          ),
-          boxShadow: isCompleted
-              ? [
-                  BoxShadow(
-                    color: streakColor.withValues(alpha: 0.25),
-                    blurRadius: 12,
-                    spreadRadius: 1,
-                  ),
-                ]
-              : [],
+          color: AppColors.surface, // elevated surface lighter than background
+          borderRadius: BorderRadius.circular(AppRadius.card),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.2),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
         ),
         child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Emoji container
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: isCompleted
-                    ? streakColor.withValues(alpha: 0.2)
-                    : Colors.white.withValues(alpha: 0.05),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Text(
-                habit.icon,
-                style: const TextStyle(fontSize: 32),
-              ),
-            ),
-            const SizedBox(width: 16),
-
-            // Main habit details
+            // Left column
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
                     children: [
-                      Flexible(
-                        child: Text(
-                          habit.name,
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 17,
-                            fontWeight: FontWeight.bold,
-                            decoration: isCompleted
-                                ? TextDecoration.lineThrough
-                                : TextDecoration.none,
-                            decorationColor: Colors.white38,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      // Category Tag Chip
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 3),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.08),
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: Text(
-                          habit.category,
-                          style: const TextStyle(
-                            color: Colors.white54,
-                            fontSize: 10,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 6),
-                  Row(
-                    children: [
-                      // Streak Flame Badge
                       Text(
-                        '${habit.streakFlameIcon} ${habit.currentStreak} day streak',
-                        style: TextStyle(
-                          color: streakColor,
-                          fontSize: 13,
+                        tierEmoji,
+                        style: const TextStyle(fontSize: 14),
+                      ),
+                      const SizedBox(width: AppSpacing.xs),
+                      Text(
+                        '${habit.currentStreak} Days Streak',
+                        style: AppTypography.labelMedium().copyWith(
+                          color: tierColor,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      const SizedBox(width: 10),
-                      Text(
-                        '• ${habit.streakTierTitle}',
-                        style: const TextStyle(
-                          color: Colors.white38,
-                          fontSize: 11,
-                        ),
-                      ),
                     ],
                   ),
-                  if (habit.freezeCount > 0) ...[
-                    const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        Text(
-                          '🧊 ${habit.freezeCount} Freeze Shields',
-                          style: const TextStyle(
-                            color: Colors.cyan,
-                            fontSize: 11,
-                          ),
-                        ),
-                      ],
+                  const SizedBox(height: AppSpacing.sm),
+                  Text(
+                    habit.name,
+                    style: AppTypography.titleMedium().copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
                     ),
-                  ],
+                  ),
                 ],
               ),
             ),
-
-            // Interactive Checkbox Button
-            GestureDetector(
-              onTap: () => notifier.toggleHabit(habit.id),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 300),
-                width: 46,
-                height: 46,
-                decoration: BoxDecoration(
-                  gradient: isCompleted
-                      ? LinearGradient(
-                          colors: [
-                            streakColor,
-                            streakColor.withValues(alpha: 0.7),
-                          ],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        )
-                      : null,
-                  color: isCompleted ? null : Colors.white.withValues(alpha: 0.05),
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: isCompleted
-                        ? Colors.transparent
-                        : Colors.white24,
-                    width: 2,
+            const SizedBox(width: AppSpacing.md),
+            // Right column
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                // Checkmark button
+                GestureDetector(
+                  onTap: _handleTap,
+                  child: ScaleTransition(
+                    scale: _scaleController,
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 300),
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        gradient: isCompleted
+                            ? LinearGradient(
+                                colors: [tierColor, tierColor.withValues(alpha: 0.7)],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                              )
+                            : null,
+                        color: isCompleted ? null : Colors.white.withValues(alpha: 0.05),
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: isCompleted ? Colors.transparent : Colors.white24,
+                          width: 2,
+                        ),
+                        boxShadow: isCompleted
+                            ? [
+                                BoxShadow(
+                                  color: tierColor.withValues(alpha: 0.4),
+                                  blurRadius: 8,
+                                  spreadRadius: 1,
+                                ),
+                              ]
+                            : [],
+                      ),
+                      child: Icon(
+                        isCompleted ? Icons.check : Icons.circle_outlined,
+                        color: isCompleted ? Colors.black : Colors.white38,
+                        size: 22,
+                      ),
+                    ),
                   ),
-                  boxShadow: isCompleted
-                      ? [
-                          BoxShadow(
-                            color: streakColor.withValues(alpha: 0.4),
-                            blurRadius: 8,
-                            spreadRadius: 1,
-                          ),
-                        ]
-                      : [],
                 ),
-                child: Icon(
-                  isCompleted ? Icons.check : Icons.circle_outlined,
-                  color: isCompleted ? Colors.black : Colors.white38,
-                  size: 24,
+                const SizedBox(height: AppSpacing.md),
+                // Heatmap
+                DotMatrixHeatmap(
+                  completedDates: habit.completedDates,
+                  rangeStart: rangeStart,
+                  rangeEnd: rangeEnd,
+                  columns: 15,
+                  dotSize: 6.0,
+                  dotSpacing: 3.0,
+                  activeColor: tierColor,
+                  inactiveColor: Colors.white.withValues(alpha: 0.15),
                 ),
-              ),
+              ],
             ),
           ],
         ),
@@ -191,29 +186,26 @@ class HabitCard extends ConsumerWidget {
     );
   }
 
-  void _showHabitOptionsSheet(BuildContext context, WidgetRef ref) {
+  void _showHabitOptionsSheet(
+      BuildContext context, WidgetRef ref, Habit habit, AppAccent accent) {
     showModalBottomSheet(
       context: context,
-      backgroundColor: const Color(0xFF131722),
+      backgroundColor: AppColors.surfaceVariant,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.sheet)),
       ),
       builder: (context) => Container(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.all(AppSpacing.xl),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Row(
               children: [
                 Text(habit.icon, style: const TextStyle(fontSize: 28)),
-                const SizedBox(width: 12),
+                const SizedBox(width: AppSpacing.sm),
                 Text(
                   habit.name,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: AppTypography.titleLarge(),
                 ),
               ],
             ),
@@ -221,22 +213,22 @@ class HabitCard extends ConsumerWidget {
 
             // Options
             ListTile(
-              leading: const Icon(Icons.edit, color: Colors.deepPurpleAccent),
-              title: const Text('Edit Habit',
-                  style: TextStyle(color: Colors.white)),
+              leading: Icon(Icons.edit, color: accent.primary),
+              title: Text('Edit Habit', style: AppTypography.bodyMedium()),
               onTap: () {
                 Navigator.pop(context);
-                if (onEdit != null) onEdit!();
+                if (widget.onEdit != null) widget.onEdit!();
               },
             ),
             if (habit.freezeCount > 0)
               ListTile(
                 leading: const Icon(Icons.ac_unit, color: Colors.cyan),
-                title: const Text('Use Streak Freeze Shield',
-                    style: TextStyle(color: Colors.white)),
-                subtitle: const Text(
+                title: Text('Use Streak Freeze Shield',
+                    style: AppTypography.bodyMedium()),
+                subtitle: Text(
                   'Protect yesterday\'s missed streak',
-                  style: TextStyle(color: Colors.white38, fontSize: 11),
+                  style: AppTypography.labelSmall()
+                      .copyWith(color: Colors.white38),
                 ),
                 onTap: () {
                   final used = ref
@@ -258,11 +250,12 @@ class HabitCard extends ConsumerWidget {
               ),
             ListTile(
               leading: const Icon(Icons.delete_outline, color: Colors.redAccent),
-              title:
-                  const Text('Delete Habit', style: TextStyle(color: Colors.redAccent)),
+              title: Text('Delete Habit',
+                  style: AppTypography.bodyMedium()
+                      .copyWith(color: Colors.redAccent)),
               onTap: () {
                 Navigator.pop(context);
-                _confirmDelete(context, ref);
+                _confirmDelete(context, ref, habit);
               },
             ),
           ],
@@ -271,21 +264,22 @@ class HabitCard extends ConsumerWidget {
     );
   }
 
-  void _confirmDelete(BuildContext context, WidgetRef ref) {
+  void _confirmDelete(BuildContext context, WidgetRef ref, Habit habit) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF1E2433),
-        title: const Text('Delete Habit', style: TextStyle(color: Colors.white)),
+        backgroundColor: AppColors.surface,
+        title: Text('Delete Habit', style: AppTypography.titleLarge()),
         content: Text(
           'Are you sure you want to delete "${habit.name}"? This action cannot be undone.',
-          style: const TextStyle(color: Colors.white60),
+          style: AppTypography.bodyMedium().copyWith(color: Colors.white60),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child:
-                const Text('Cancel', style: TextStyle(color: Colors.white54)),
+            child: Text('Cancel',
+                style: AppTypography.labelLarge()
+                    .copyWith(color: Colors.white54)),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
@@ -293,7 +287,8 @@ class HabitCard extends ConsumerWidget {
               ref.read(habitsProvider.notifier).deleteHabit(habit.id);
               Navigator.pop(context);
             },
-            child: const Text('Delete', style: TextStyle(color: Colors.white)),
+            child: Text('Delete',
+                style: AppTypography.labelLarge().copyWith(color: Colors.white)),
           ),
         ],
       ),

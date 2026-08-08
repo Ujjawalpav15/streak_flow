@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'models/habit.dart';
 import 'providers/habit_provider.dart';
+import 'providers/theme_provider.dart';
 import 'screens/home_screen.dart';
 import 'services/notification_service.dart';
+import 'theme/app_colors.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -16,11 +19,16 @@ void main() async {
       Hive.registerAdapter(HabitAdapter());
     }
     await Hive.openBox<Habit>('habits');
+    await Hive.openBox('settings');
   } catch (e) {
     debugPrint('Hive Initialization Error: $e. Attempting clean recovery...');
     try {
       await Hive.deleteBoxFromDisk('habits');
       await Hive.openBox<Habit>('habits');
+      // Settings box is non-critical, try to open it anyway
+      try {
+        await Hive.openBox('settings');
+      } catch (_) {}
     } catch (err) {
       debugPrint('Hive Recovery Error: $err');
     }
@@ -67,18 +75,37 @@ class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
 
   @override
   Widget build(BuildContext context) {
+    final accent = ref.watch(accentThemeProvider);
+    final themeMode = ref.watch(themeModeProvider);
+
     return MaterialApp(
       title: 'StreakFlow',
       debugShowCheckedModeBanner: false,
+      themeMode: themeMode,
       theme: ThemeData(
-        brightness: Brightness.dark,
-        scaffoldBackgroundColor: const Color(0xFF0B0E14),
+        brightness: Brightness.light,
         colorScheme: ColorScheme.fromSeed(
-          seedColor: Colors.deepPurpleAccent,
+          seedColor: accent.primary,
+          brightness: Brightness.light,
+        ),
+        useMaterial3: true,
+        textTheme: GoogleFonts.interTextTheme(
+          ThemeData(brightness: Brightness.light).textTheme,
+        ),
+        extensions: <ThemeExtension<dynamic>>[accent],
+      ),
+      darkTheme: ThemeData(
+        brightness: Brightness.dark,
+        scaffoldBackgroundColor: AppColors.background,
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: accent.primary,
           brightness: Brightness.dark,
         ),
         useMaterial3: true,
-        fontFamily: 'Roboto',
+        textTheme: GoogleFonts.interTextTheme(
+          ThemeData(brightness: Brightness.dark).textTheme,
+        ),
+        extensions: <ThemeExtension<dynamic>>[accent],
       ),
       home: const HomeScreen(),
     );

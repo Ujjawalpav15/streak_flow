@@ -1,6 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../models/habit.dart';
+import '../theme/app_colors.dart';
+import '../theme/app_spacing.dart';
+import '../theme/app_radius.dart';
+import '../theme/app_typography.dart';
+import '../theme/app_accent.dart';
+import '../theme/streak_tiers.dart';
 
 class InteractiveMonthlyCalendar extends StatefulWidget {
   final List<Habit> habits;
@@ -15,6 +21,7 @@ class InteractiveMonthlyCalendar extends StatefulWidget {
 class _InteractiveMonthlyCalendarState
     extends State<InteractiveMonthlyCalendar> {
   late DateTime _selectedMonth;
+  bool _isTransitioning = false;
 
   @override
   void initState() {
@@ -25,20 +32,29 @@ class _InteractiveMonthlyCalendarState
 
   void _previousMonth() {
     setState(() {
+      _isTransitioning = true;
       _selectedMonth =
           DateTime(_selectedMonth.year, _selectedMonth.month - 1, 1);
+    });
+    Future.delayed(const Duration(milliseconds: 300), () {
+      if (mounted) setState(() => _isTransitioning = false);
     });
   }
 
   void _nextMonth() {
     setState(() {
+      _isTransitioning = true;
       _selectedMonth =
           DateTime(_selectedMonth.year, _selectedMonth.month + 1, 1);
+    });
+    Future.delayed(const Duration(milliseconds: 300), () {
+      if (mounted) setState(() => _isTransitioning = false);
     });
   }
 
   @override
   Widget build(BuildContext context) {
+    final accent = Theme.of(context).extension<AppAccent>()!;
     final daysInMonth =
         DateTime(_selectedMonth.year, _selectedMonth.month + 1, 0).day;
     final firstWeekday =
@@ -47,11 +63,11 @@ class _InteractiveMonthlyCalendarState
     final monthName = DateFormat('MMMM yyyy').format(_selectedMonth);
 
     return Container(
-      padding: const EdgeInsets.all(18),
+      padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
-        color: const Color(0xFF161B26),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+        color: AppColors.surface,
+        borderRadius: AppRadius.cardRadius,
+        border: Border.all(color: AppColors.onSurfaceDim.withValues(alpha: 0.3)),
       ),
       child: Column(
         children: [
@@ -60,26 +76,41 @@ class _InteractiveMonthlyCalendarState
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               IconButton(
-                icon: const Icon(Icons.chevron_left_rounded,
-                    color: Colors.white70),
+                icon: Icon(Icons.chevron_left_rounded,
+                    color: AppColors.onSurfaceMuted),
                 onPressed: _previousMonth,
               ),
-              Text(
-                monthName,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 17,
-                  fontWeight: FontWeight.bold,
+              AnimatedSwitcher(
+                duration: const Duration(milliseconds: 300),
+                transitionBuilder: (child, animation) {
+                  return FadeTransition(
+                    opacity: animation,
+                    child: SlideTransition(
+                      position: Tween<Offset>(
+                        begin: const Offset(0.0, 0.3),
+                        end: Offset.zero,
+                      ).animate(CurvedAnimation(
+                        parent: animation,
+                        curve: Curves.easeOutCubic,
+                      )),
+                      child: child,
+                    ),
+                  );
+                },
+                child: Text(
+                  monthName,
+                  key: ValueKey(monthName),
+                  style: AppTypography.titleMedium(),
                 ),
               ),
               IconButton(
-                icon: const Icon(Icons.chevron_right_rounded,
-                    color: Colors.white70),
+                icon: Icon(Icons.chevron_right_rounded,
+                    color: AppColors.onSurfaceMuted),
                 onPressed: _nextMonth,
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: AppSpacing.md),
 
           // Weekday Labels
           Row(
@@ -90,127 +121,140 @@ class _InteractiveMonthlyCalendarState
                 child: Text(
                   day,
                   textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    color: Colors.white38,
-                    fontSize: 12,
+                  style: AppTypography.labelSmall().copyWith(
                     fontWeight: FontWeight.bold,
                   ),
                 ),
               );
             }).toList(),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: AppSpacing.md),
 
-          // Day Grid Matrix
-          GridView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: (firstWeekday - 1) + daysInMonth,
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 7,
-              mainAxisSpacing: 8,
-              crossAxisSpacing: 8,
-            ),
-            itemBuilder: (context, index) {
-              if (index < firstWeekday - 1) {
-                return const SizedBox.shrink();
-              }
+          // Day Grid Matrix with animated fade
+          AnimatedOpacity(
+            opacity: _isTransitioning ? 0.3 : 1.0,
+            duration: const Duration(milliseconds: 200),
+            child: GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: (firstWeekday - 1) + daysInMonth,
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 7,
+                mainAxisSpacing: 6,
+                crossAxisSpacing: 6,
+              ),
+              itemBuilder: (context, index) {
+                if (index < firstWeekday - 1) {
+                  return const SizedBox.shrink();
+                }
 
-              final dayNumber = index - (firstWeekday - 1) + 1;
-              final targetDate = DateTime(
-                  _selectedMonth.year, _selectedMonth.month, dayNumber);
+                final dayNumber = index - (firstWeekday - 1) + 1;
+                final targetDate = DateTime(
+                    _selectedMonth.year, _selectedMonth.month, dayNumber);
 
-              // Calculate habits completed or frozen on targetDate
-              final completedHabits = widget.habits.where((h) {
-                return h.completedDates.any((d) =>
-                    d.year == targetDate.year &&
-                    d.month == targetDate.month &&
-                    d.day == targetDate.day);
-              }).toList();
+                // Calculate habits completed or frozen on targetDate
+                final completedHabits = widget.habits.where((h) {
+                  return h.completedDates.any((d) =>
+                      d.year == targetDate.year &&
+                      d.month == targetDate.month &&
+                      d.day == targetDate.day);
+                }).toList();
 
-              final frozenHabits = widget.habits.where((h) {
-                return h.frozenDates.any((d) =>
-                    d.year == targetDate.year &&
-                    d.month == targetDate.month &&
-                    d.day == targetDate.day);
-              }).toList();
+                final frozenHabits = widget.habits.where((h) {
+                  return h.frozenDates.any((d) =>
+                      d.year == targetDate.year &&
+                      d.month == targetDate.month &&
+                      d.day == targetDate.day);
+                }).toList();
 
-              final isToday = DateTime.now().year == targetDate.year &&
-                  DateTime.now().month == targetDate.month &&
-                  DateTime.now().day == targetDate.day;
+                final isToday = DateTime.now().year == targetDate.year &&
+                    DateTime.now().month == targetDate.month &&
+                    DateTime.now().day == targetDate.day;
 
-              final totalHabits = widget.habits.length;
-              final completedRatio = totalHabits == 0
-                  ? 0.0
-                  : (completedHabits.length / totalHabits);
+                final totalHabits = widget.habits.length;
+                final completedRatio = totalHabits == 0
+                    ? 0.0
+                    : (completedHabits.length / totalHabits);
 
-              Color cellColor = Colors.white.withValues(alpha: 0.04);
-              if (completedHabits.isNotEmpty) {
-                cellColor = Color.lerp(
-                  Colors.deepPurple.shade900,
-                  Colors.deepPurpleAccent,
-                  completedRatio,
-                )!;
-              } else if (frozenHabits.isNotEmpty) {
-                cellColor = Colors.cyan.shade900;
-              }
+                // Smooth color interpolation between not-done and accent color
+                Color cellColor = AppColors.onSurfaceDim.withValues(alpha: 0.15);
+                if (completedHabits.isNotEmpty) {
+                  cellColor = Color.lerp(
+                    accent.gradientStart.withValues(alpha: 0.3),
+                    accent.primary,
+                    completedRatio,
+                  )!;
+                } else if (frozenHabits.isNotEmpty) {
+                  cellColor = const Color(0xFF164E63); // Subtle cyan
+                }
 
-              return GestureDetector(
-                onTap: () => _showDayDetailSheet(
-                  context,
-                  targetDate,
-                  completedHabits,
-                  frozenHabits,
-                ),
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: cellColor,
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(
-                      color: isToday
-                          ? Colors.amber.shade400
-                          : (completedHabits.isNotEmpty
-                              ? Colors.deepPurpleAccent.withValues(alpha: 0.6)
-                              : Colors.transparent),
-                      width: isToday ? 1.8 : 1.0,
-                    ),
+                return GestureDetector(
+                  onTap: () => _showDayDetailSheet(
+                    context,
+                    targetDate,
+                    completedHabits,
+                    frozenHabits,
                   ),
-                  child: Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          '$dayNumber',
-                          style: TextStyle(
-                            color: isToday
-                                ? Colors.amber.shade400
-                                : (completedHabits.isNotEmpty
-                                    ? Colors.white
-                                    : Colors.white38),
-                            fontWeight: isToday || completedHabits.isNotEmpty
-                                ? FontWeight.bold
-                                : FontWeight.normal,
-                            fontSize: 12,
-                          ),
-                        ),
-                        if (frozenHabits.isNotEmpty)
-                          const Text('🧊', style: TextStyle(fontSize: 8))
-                        else if (completedHabits.isNotEmpty)
-                          Container(
-                            margin: const EdgeInsets.only(top: 2),
-                            width: 4,
-                            height: 4,
-                            decoration: const BoxDecoration(
-                              color: Colors.amber,
-                              shape: BoxShape.circle,
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 250),
+                    curve: Curves.easeOutCubic,
+                    decoration: BoxDecoration(
+                      color: cellColor,
+                      borderRadius: BorderRadius.circular(AppSpacing.sm),
+                      border: Border.all(
+                        color: isToday
+                            ? accent.glow
+                            : (completedHabits.isNotEmpty
+                                ? accent.primary.withValues(alpha: 0.4)
+                                : Colors.transparent),
+                        width: isToday ? 1.8 : 1.0,
+                      ),
+                      boxShadow: isToday
+                          ? [
+                              BoxShadow(
+                                color: accent.glow.withValues(alpha: 0.3),
+                                blurRadius: 6,
+                              ),
+                            ]
+                          : [],
+                    ),
+                    child: Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            '$dayNumber',
+                            style: TextStyle(
+                              color: isToday
+                                  ? accent.glow
+                                  : (completedHabits.isNotEmpty
+                                      ? Colors.white
+                                      : AppColors.onSurfaceMuted),
+                              fontWeight: isToday || completedHabits.isNotEmpty
+                                  ? FontWeight.bold
+                                  : FontWeight.normal,
+                              fontSize: 12,
                             ),
                           ),
-                      ],
+                          if (frozenHabits.isNotEmpty)
+                            const Text('🧊', style: TextStyle(fontSize: 8))
+                          else if (completedHabits.isNotEmpty)
+                            Container(
+                              margin: const EdgeInsets.only(top: 2),
+                              width: 4,
+                              height: 4,
+                              decoration: BoxDecoration(
+                                color: accent.glow,
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                        ],
+                      ),
                     ),
                   ),
-                ),
-              );
-            },
+                );
+              },
+            ),
           ),
         ],
       ),
@@ -223,17 +267,20 @@ class _InteractiveMonthlyCalendarState
     List<Habit> completedHabits,
     List<Habit> frozenHabits,
   ) {
+    final accent = Theme.of(context).extension<AppAccent>()!;
     final dateFormatted = DateFormat('EEEE, MMMM d, yyyy').format(date);
     final totalHabits = widget.habits.length;
 
     showModalBottomSheet(
       context: context,
-      backgroundColor: const Color(0xFF131722),
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      backgroundColor: AppColors.surfaceVariant,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(AppRadius.sheet),
+        ),
       ),
       builder: (context) => Container(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.all(AppSpacing.xl),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -241,38 +288,34 @@ class _InteractiveMonthlyCalendarState
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
+                Text(
                   '📅 Day History',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: AppTypography.headlineMedium().copyWith(fontSize: 20),
                 ),
                 IconButton(
-                  icon: const Icon(Icons.close, color: Colors.white54),
+                  icon: Icon(Icons.close, color: AppColors.onSurfaceMuted),
                   onPressed: () => Navigator.pop(context),
                 ),
               ],
             ),
             Text(
               dateFormatted,
-              style: const TextStyle(color: Colors.white54, fontSize: 13),
+              style: AppTypography.labelSmall(),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppSpacing.lg),
 
             // Completion Summary Banner
             Container(
-              padding: const EdgeInsets.all(14),
+              padding: const EdgeInsets.all(AppSpacing.lg),
               decoration: BoxDecoration(
                 color: completedHabits.isNotEmpty
-                    ? Colors.deepPurple.withValues(alpha: 0.2)
-                    : Colors.white.withValues(alpha: 0.05),
-                borderRadius: BorderRadius.circular(14),
+                    ? accent.primary.withValues(alpha: 0.15)
+                    : AppColors.onSurfaceDim.withValues(alpha: 0.2),
+                borderRadius: AppRadius.cardRadius,
                 border: Border.all(
                   color: completedHabits.isNotEmpty
-                      ? Colors.deepPurpleAccent
-                      : Colors.white10,
+                      ? accent.primary
+                      : AppColors.onSurfaceDim,
                 ),
               ),
               child: Row(
@@ -283,29 +326,25 @@ class _InteractiveMonthlyCalendarState
                         : (completedHabits.isNotEmpty ? '⚡' : '💤'),
                     style: const TextStyle(fontSize: 24),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: AppSpacing.md),
                   Expanded(
                     child: Text(
                       '${completedHabits.length} of $totalHabits habits completed on this day.',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                      ),
+                      style: AppTypography.bodyMedium(),
                     ),
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppSpacing.lg),
 
             // List of completed habits
             if (completedHabits.isEmpty)
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 12),
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
                 child: Text(
                   'No habits were marked complete on this date.',
-                  style: TextStyle(color: Colors.white38, fontSize: 13),
+                  style: AppTypography.bodyMedium(color: AppColors.onSurfaceMuted),
                 ),
               )
             else
@@ -316,12 +355,12 @@ class _InteractiveMonthlyCalendarState
                         style: const TextStyle(fontSize: 22)),
                     title: Text(
                       habit.name,
-                      style: const TextStyle(
-                          color: Colors.white, fontWeight: FontWeight.w600),
+                      style: AppTypography.bodyMedium(),
                     ),
                     subtitle: Text(
-                      '${habit.streakFlameIcon} ${habit.currentStreak} day streak',
-                      style: TextStyle(color: habit.streakColor, fontSize: 11),
+                      '${StreakTiers.getTierEmoji(habit.currentStreak)} ${habit.currentStreak} day streak',
+                      style: AppTypography.labelSmall(
+                          color: StreakTiers.getTierColor(habit.currentStreak)),
                     ),
                     trailing: const Icon(Icons.check_circle_rounded,
                         color: Colors.greenAccent),

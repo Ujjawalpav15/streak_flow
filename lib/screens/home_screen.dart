@@ -1,12 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
 import '../models/habit.dart';
 import '../providers/habit_provider.dart';
 import '../widgets/habit_card.dart';
+import 'stats_screen.dart';
 import '../widgets/milestone_badges_sheet.dart';
 import '../widgets/settings_sheet.dart';
-import 'stats_screen.dart';
+
+import '../theme/app_colors.dart';
+import '../theme/app_spacing.dart';
+import '../theme/app_radius.dart';
+import '../theme/app_typography.dart';
+import '../theme/app_accent.dart';
 
 final searchQueryProvider = StateProvider<String>((ref) => '');
 final sortOptionProvider = StateProvider<String>((ref) => 'Default');
@@ -40,17 +45,24 @@ final searchedAndSortedHabitsProvider = Provider<List<Habit>>((ref) {
   return list;
 });
 
-class HomeScreen extends ConsumerWidget {
+class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends ConsumerState<HomeScreen> {
+  int _currentIndex = 0;
+
+  @override
+  Widget build(BuildContext context) {
     final habits = ref.watch(searchedAndSortedHabitsProvider);
     final allHabits = ref.watch(habitsProvider);
     final selectedCategory = ref.watch(selectedCategoryProvider);
     final sortOption = ref.watch(sortOptionProvider);
 
-    final todayFormatted = DateFormat('EEEE, MMM d').format(DateTime.now());
+    final accent = Theme.of(context).extension<AppAccent>()!;
 
     // Calculate Loss Aversion "At Risk" habits
     final uncompletedActiveHabits = allHabits.where((h) {
@@ -59,116 +71,129 @@ class HomeScreen extends ConsumerWidget {
     }).toList();
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0B0E14),
-      appBar: AppBar(
-        backgroundColor: const Color(0xFF0B0E14),
-        elevation: 0,
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'StreakFlow ⚡',
-              style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.w800,
-                fontSize: 24,
-                letterSpacing: 0.5,
-              ),
-            ),
-            Text(
-              todayFormatted,
-              style: const TextStyle(
-                color: Colors.white38,
-                fontSize: 12,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          IconButton(
-            icon: const Text('🏆', style: TextStyle(fontSize: 22)),
-            tooltip: 'Milestone Badges',
-            onPressed: () {
-              showModalBottomSheet(
-                context: context,
-                isScrollControlled: true,
-                backgroundColor: Colors.transparent,
-                builder: (_) => MilestoneBadgesSheet(habits: allHabits),
-              );
-            },
-          ),
-          IconButton(
-            icon: const Icon(Icons.bar_chart_rounded, color: Colors.white),
-            tooltip: 'Statistics & Heatmaps',
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const StatsScreen()),
-              );
-            },
-          ),
-          IconButton(
-            icon: const Icon(Icons.settings_rounded, color: Colors.white70),
-            tooltip: 'Settings & Backup',
-            onPressed: () {
-              showModalBottomSheet(
-                context: context,
-                backgroundColor: Colors.transparent,
-                builder: (_) => const SettingsSheet(),
-              );
-            },
-          ),
-          const SizedBox(width: 4),
-        ],
-      ),
-      body: Column(
+      backgroundColor: AppColors.background,
+      body: IndexedStack(
+        index: _currentIndex == 1 ? 1 : 0,
         children: [
+          Column(
+            children: [
+          Container(
+            padding: EdgeInsets.only(
+              top: MediaQuery.of(context).padding.top + AppSpacing.md,
+              left: AppSpacing.md,
+              right: AppSpacing.md,
+              bottom: AppSpacing.xl,
+            ),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [accent.gradientStart, accent.gradientEnd],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    CircleAvatar(
+                      radius: 20,
+                      backgroundColor: Colors.white.withValues(alpha: 0.2),
+                      child: const Icon(Icons.person, color: Colors.white),
+                    ),
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(AppRadius.pill),
+                          ),
+                          child: Row(
+                            children: [
+                              const Text('🔥', style: TextStyle(fontSize: 14)),
+                              const SizedBox(width: 4),
+                              Text(
+                                '${allHabits.fold<int>(0, (max, h) => h.currentStreak > max ? h.currentStreak : max)}',
+                                style: AppTypography.labelMedium().copyWith(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        IconButton(
+                          icon: const Icon(Icons.notifications_outlined, color: Colors.white),
+                          onPressed: () {},
+                        ),
+                      ],
+                    )
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.lg),
+                Text(
+                  '${DateTime.now().hour < 12 ? "Good Morning" : DateTime.now().hour < 17 ? "Good Afternoon" : "Good Evening"}!',
+                  style: AppTypography.headlineMedium().copyWith(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Keep the streak alive, spark your daily motivation.',
+                  style: AppTypography.bodyMedium().copyWith(color: Colors.white70),
+                ),
+              ],
+            ),
+          ),
           // Search & Sort Bar
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
             child: Row(
               children: [
                 Expanded(
                   child: Container(
                     height: 42,
                     decoration: BoxDecoration(
-                      color: const Color(0xFF161B26),
+                      color: AppColors.surface,
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.white10),
+                      border: Border.all(color: Colors.white.withValues(alpha: 0.05), width: 0.5),
                     ),
                     child: TextField(
-                      style: const TextStyle(color: Colors.white, fontSize: 13),
+                      style: AppTypography.bodyMedium(color: AppColors.onSurface),
                       onChanged: (val) {
                         ref.read(searchQueryProvider.notifier).state = val;
                       },
-                      decoration: const InputDecoration(
+                      decoration: InputDecoration(
                         hintText: 'Search habits...',
-                        hintStyle: TextStyle(color: Colors.white38, fontSize: 13),
-                        prefixIcon: Icon(Icons.search_rounded,
+                        hintStyle: AppTypography.bodyMedium(color: AppColors.onSurfaceMuted),
+                        prefixIcon: const Icon(Icons.search_rounded,
                             color: Colors.white38, size: 20),
                         border: InputBorder.none,
-                        contentPadding: EdgeInsets.symmetric(vertical: 10),
+                        contentPadding: const EdgeInsets.symmetric(vertical: 10),
                       ),
                     ),
                   ),
                 ),
-                const SizedBox(width: 10),
+                const SizedBox(width: AppSpacing.sm),
                 Container(
                   height: 42,
-                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF161B26),
+                    color: AppColors.surface,
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.white10),
+                    border: Border.all(color: Colors.white.withValues(alpha: 0.05), width: 0.5),
                   ),
                   child: DropdownButton<String>(
                     value: sortOption,
                     underline: const SizedBox(),
-                    dropdownColor: const Color(0xFF1E2433),
+                    dropdownColor: AppColors.surfaceVariant,
                     icon: const Icon(Icons.sort_rounded,
                         color: Colors.white70, size: 20),
-                    style: const TextStyle(color: Colors.white, fontSize: 12),
+                    style: AppTypography.bodySmall(color: AppColors.onSurface),
                     items: [
                       'Default',
                       'Uncompleted First',
@@ -192,20 +217,20 @@ class HomeScreen extends ConsumerWidget {
           // "Streak at Risk!" Loss-Aversion Warning Banner
           if (uncompletedActiveHabits.isNotEmpty) ...[
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
               child: Container(
-                padding: const EdgeInsets.all(14),
+                padding: const EdgeInsets.all(AppSpacing.md),
                 decoration: BoxDecoration(
-                  gradient: LinearGradient(
+                  gradient: const LinearGradient(
                     colors: [
-                      Colors.orange.shade900.withValues(alpha: 0.8),
-                      Colors.red.shade900.withValues(alpha: 0.8),
+                      AppColors.warningGradientStart,
+                      AppColors.warningGradientEnd,
                     ],
                   ),
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(AppRadius.card),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.red.withValues(alpha: 0.3),
+                      color: AppColors.warningGradientEnd.withValues(alpha: 0.3),
                       blurRadius: 10,
                       spreadRadius: 1,
                     ),
@@ -214,26 +239,21 @@ class HomeScreen extends ConsumerWidget {
                 child: Row(
                   children: [
                     const Text('⚠️', style: TextStyle(fontSize: 28)),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: AppSpacing.sm),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
+                          Text(
                             'Streak at Risk!',
-                            style: TextStyle(
-                              color: Colors.white,
+                            style: AppTypography.labelLarge(color: Colors.white).copyWith(
                               fontWeight: FontWeight.bold,
-                              fontSize: 15,
                             ),
                           ),
                           const SizedBox(height: 2),
                           Text(
                             '${uncompletedActiveHabits.length} habit(s) not checked today. Complete them before midnight!',
-                            style: const TextStyle(
-                              color: Colors.white70,
-                              fontSize: 11,
-                            ),
+                            style: AppTypography.bodySmall(color: Colors.white70),
                           ),
                         ],
                       ),
@@ -247,13 +267,13 @@ class HomeScreen extends ConsumerWidget {
           // Category Filter Chips
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
             child: Row(
               children: ['All', 'Fitness', 'Coding', 'Study', 'Health', 'General']
                   .map((category) {
                 final isSelected = selectedCategory == category;
                 return Padding(
-                  padding: const EdgeInsets.only(right: 8),
+                  padding: const EdgeInsets.only(right: AppSpacing.sm),
                   child: FilterChip(
                     label: Text(category),
                     selected: isSelected,
@@ -261,19 +281,20 @@ class HomeScreen extends ConsumerWidget {
                       ref.read(selectedCategoryProvider.notifier).state =
                           category;
                     },
-                    backgroundColor: const Color(0xFF161B26),
-                    selectedColor: Colors.deepPurple,
-                    labelStyle: TextStyle(
-                      color: isSelected ? Colors.white : Colors.white60,
+                    backgroundColor: AppColors.surfaceVariant,
+                    selectedColor: accent.primary,
+                    labelStyle: AppTypography.labelMedium(
+                      color: isSelected ? Colors.white : AppColors.onSurfaceMuted,
+                    ).copyWith(
                       fontWeight:
                           isSelected ? FontWeight.bold : FontWeight.normal,
                     ),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(AppRadius.pill),
                       side: BorderSide(
                         color: isSelected
-                            ? Colors.deepPurpleAccent
-                            : Colors.white10,
+                            ? accent.primary
+                            : Colors.white.withValues(alpha: 0.05),
                       ),
                     ),
                   ),
@@ -289,47 +310,160 @@ class HomeScreen extends ConsumerWidget {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Text('⚡', style: TextStyle(fontSize: 56)),
-                        const SizedBox(height: 16),
+                        Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            CustomPaint(
+                              size: const Size(100, 100),
+                              painter: DashedCirclePainter(color: Colors.white24),
+                            ),
+                            const Icon(
+                              Icons.local_fire_department_outlined,
+                              size: 48,
+                              color: Colors.white38,
+                            ),
+                            Positioned(
+                              bottom: 0,
+                              right: 0,
+                              child: GestureDetector(
+                                onTap: () => _showAddOrEditHabitDialog(context, ref),
+                                child: Container(
+                                  padding: const EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    color: accent.primary,
+                                    shape: BoxShape.circle,
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: accent.primary.withValues(alpha: 0.3),
+                                        blurRadius: 8,
+                                        offset: const Offset(0, 2),
+                                      ),
+                                    ],
+                                  ),
+                                  child: const Icon(Icons.add, color: Colors.white, size: 20),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: AppSpacing.xl),
                         Text(
-                          selectedCategory == 'All'
-                              ? 'No habits tracked yet.\nTap + below to build your streak!'
-                              : 'No habits found in "$selectedCategory".',
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(
-                            color: Colors.white38,
-                            fontSize: 15,
+                          'Tap Here To Start',
+                          style: AppTypography.titleLarge().copyWith(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
                           ),
+                        ),
+                        const SizedBox(height: AppSpacing.xs),
+                        Text(
+                          'Create your first habit and start your journey.',
+                          style: AppTypography.bodyMedium().copyWith(color: Colors.white54),
                         ),
                       ],
                     ),
                   )
                 : ListView.builder(
-                    padding: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.all(AppSpacing.md),
                     itemCount: habits.length,
                     itemBuilder: (context, index) {
                       final habit = habits[index];
-                      return HabitCard(
-                        habit: habit,
-                        onEdit: () => _showAddOrEditHabitDialog(
-                            context, ref, habit: habit),
+                      return _StaggeredItem(
+                        index: index,
+                        child: HabitCard(
+                          habit: habit,
+                          onEdit: () => _showAddOrEditHabitDialog(
+                              context, ref, habit: habit),
+                        ),
                       );
                     },
                   ),
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        backgroundColor: Colors.deepPurpleAccent,
-        elevation: 6,
-        onPressed: () => _showAddOrEditHabitDialog(context, ref),
-        icon: const Icon(Icons.add_rounded, color: Colors.white),
-        label: const Text(
-          'New Habit',
-          style: TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-          ),
+      const StatsScreen(),
+    ],
+  ),
+  bottomNavigationBar: _buildBottomNav(accent, allHabits),
+);
+  }
+  Widget _buildBottomNav(AppAccent accent, List<Habit> allHabits) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: AppColors.background,
+        border: Border(top: BorderSide(color: Colors.white.withValues(alpha: 0.05))),
+      ),
+      child: SafeArea(
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: [
+            _buildNavItem(0, Icons.local_fire_department, Icons.local_fire_department_outlined, accent),
+            _buildNavItem(1, Icons.calendar_month, Icons.calendar_month_outlined, accent),
+            
+            GestureDetector(
+              onTap: () => _showAddOrEditHabitDialog(context, ref),
+              child: Container(
+                width: 52,
+                height: 52,
+                decoration: BoxDecoration(
+                  color: accent.primary,
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: accent.primary.withValues(alpha: 0.3),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    )
+                  ]
+                ),
+                child: const Icon(Icons.add, color: Colors.white, size: 28),
+              ),
+            ),
+            
+            _buildNavItem(3, Icons.workspace_premium, Icons.workspace_premium_outlined, accent, isAction: true, onTap: () {
+              showModalBottomSheet(
+                context: context,
+                isScrollControlled: true,
+                backgroundColor: Colors.transparent,
+                builder: (_) => MilestoneBadgesSheet(habits: allHabits),
+              );
+            }),
+            _buildNavItem(4, Icons.person, Icons.person_outline, accent, isAction: true, onTap: () {
+              showModalBottomSheet(
+                context: context,
+                backgroundColor: Colors.transparent,
+                builder: (_) => const SettingsSheet(),
+              );
+            }),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNavItem(int index, IconData activeIcon, IconData inactiveIcon, AppAccent accent, {bool isAction = false, VoidCallback? onTap}) {
+    final isActive = _currentIndex == index;
+    return GestureDetector(
+      onTap: () {
+        if (isAction && onTap != null) {
+          onTap();
+        } else {
+          setState(() {
+            _currentIndex = index;
+          });
+        }
+      },
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        decoration: BoxDecoration(
+          color: isActive ? accent.primaryContainer : Colors.transparent,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Icon(
+          isActive ? activeIcon : inactiveIcon,
+          color: isActive ? accent.primary : Colors.white54,
+          size: 26,
         ),
       ),
     );
@@ -347,6 +481,8 @@ class HomeScreen extends ConsumerWidget {
     final presetEmojis = ['🏃', '💻', '📚', '🧘', '🎨', '🏋️', '💧', '⚡', '🎯'];
     final categories = ['Fitness', 'Coding', 'Study', 'Health', 'General'];
 
+    final accent = Theme.of(context).extension<AppAccent>()!;
+
     showDialog(
       context: context,
       builder: (context) => StatefulBuilder(
@@ -354,13 +490,13 @@ class HomeScreen extends ConsumerWidget {
           String? errorMessage;
 
           return AlertDialog(
-            backgroundColor: const Color(0xFF161B26),
+            backgroundColor: AppColors.surface,
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(24),
+              borderRadius: BorderRadius.circular(AppRadius.sheet),
             ),
             title: Text(
               isEditing ? 'Edit Habit' : 'Build New Habit',
-              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+              style: AppTypography.headlineSmall(color: Colors.white),
             ),
             content: SingleChildScrollView(
               child: Column(
@@ -370,38 +506,35 @@ class HomeScreen extends ConsumerWidget {
                   // Habit Name
                   TextField(
                     controller: nameController,
-                    style: const TextStyle(color: Colors.white),
+                    style: AppTypography.bodyLarge(color: Colors.white),
                     decoration: InputDecoration(
                       hintText: 'Habit name (e.g. Daily Running)',
-                      hintStyle: const TextStyle(color: Colors.white38),
+                      hintStyle: AppTypography.bodyLarge(color: Colors.white38),
                       errorText: errorMessage,
                       enabledBorder: const UnderlineInputBorder(
                         borderSide: BorderSide(color: Colors.white24),
                       ),
-                      focusedBorder: const UnderlineInputBorder(
-                        borderSide: BorderSide(color: Colors.deepPurpleAccent),
+                      focusedBorder: UnderlineInputBorder(
+                        borderSide: BorderSide(color: accent.primary),
                       ),
                     ),
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: AppSpacing.lg),
 
                   // Emoji Preset Quick Selector & Custom Emoji Input
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text('Select Icon Emoji',
-                          style: TextStyle(color: Colors.white54, fontSize: 12)),
+                      Text('Select Icon Emoji',
+                          style: AppTypography.labelSmall(color: Colors.white54)),
                       Text(
                         'Active: ${emojiController.text}',
-                        style: const TextStyle(
-                          color: Colors.amberAccent,
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                        ),
+                        style: AppTypography.labelMedium(color: Colors.amberAccent)
+                            .copyWith(fontWeight: FontWeight.bold),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: AppSpacing.sm),
                   Wrap(
                     spacing: 8,
                     runSpacing: 8,
@@ -418,12 +551,12 @@ class HomeScreen extends ConsumerWidget {
                             padding: const EdgeInsets.all(8),
                             decoration: BoxDecoration(
                               color: isSelected
-                                  ? Colors.deepPurpleAccent.withValues(alpha: 0.3)
+                                  ? accent.primary.withValues(alpha: 0.3)
                                   : Colors.white.withValues(alpha: 0.05),
                               borderRadius: BorderRadius.circular(10),
                               border: Border.all(
                                 color: isSelected
-                                    ? Colors.deepPurpleAccent
+                                    ? accent.primary
                                     : Colors.transparent,
                               ),
                             ),
@@ -433,7 +566,7 @@ class HomeScreen extends ConsumerWidget {
                       }),
                     ],
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: AppSpacing.md),
                   // Custom Emoji Keyboard Input Field
                   TextField(
                     controller: emojiController,
@@ -443,31 +576,31 @@ class HomeScreen extends ConsumerWidget {
                     },
                     decoration: InputDecoration(
                       labelText: 'Or type/paste custom emoji (+)',
-                      labelStyle: const TextStyle(color: Colors.deepPurpleAccent, fontSize: 12),
+                      labelStyle: AppTypography.labelSmall(color: accent.primary),
                       hintText: 'e.g. 🚴, 🎸, 🧗, 🥑, 🎮',
-                      hintStyle: const TextStyle(color: Colors.white24, fontSize: 12),
+                      hintStyle: AppTypography.labelSmall(color: Colors.white24),
                       contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                      prefixIcon: const Icon(Icons.add_reaction_outlined, color: Colors.deepPurpleAccent, size: 20),
+                      prefixIcon: Icon(Icons.add_reaction_outlined, color: accent.primary, size: 20),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                         borderSide: const BorderSide(color: Colors.white24),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: Colors.deepPurpleAccent),
+                        borderSide: BorderSide(color: accent.primary),
                       ),
                     ),
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: AppSpacing.lg),
 
                   // Category Selector
-                  const Text('Category',
-                      style: TextStyle(color: Colors.white54, fontSize: 12)),
-                  const SizedBox(height: 8),
+                  Text('Category',
+                      style: AppTypography.labelSmall(color: Colors.white54)),
+                  const SizedBox(height: AppSpacing.sm),
                   DropdownButtonFormField<String>(
                     initialValue: selectedCategory,
-                    dropdownColor: const Color(0xFF1E2433),
-                    style: const TextStyle(color: Colors.white),
+                    dropdownColor: AppColors.surfaceVariant,
+                    style: AppTypography.bodyMedium(color: Colors.white),
                     decoration: InputDecoration(
                       contentPadding: const EdgeInsets.symmetric(
                           horizontal: 12, vertical: 8),
@@ -478,7 +611,7 @@ class HomeScreen extends ConsumerWidget {
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                         borderSide:
-                            const BorderSide(color: Colors.deepPurpleAccent),
+                            BorderSide(color: accent.primary),
                       ),
                     ),
                     items: categories.map((cat) {
@@ -501,12 +634,12 @@ class HomeScreen extends ConsumerWidget {
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context),
-                child: const Text('Cancel',
-                    style: TextStyle(color: Colors.white54)),
+                child: Text('Cancel',
+                    style: AppTypography.labelLarge(color: Colors.white54)),
               ),
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.deepPurpleAccent,
+                  backgroundColor: accent.primary,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
@@ -537,7 +670,7 @@ class HomeScreen extends ConsumerWidget {
                 },
                 child: Text(
                   isEditing ? 'Save Changes' : 'Create Habit',
-                  style: const TextStyle(color: Colors.white),
+                  style: AppTypography.labelLarge(color: Colors.white),
                 ),
               ),
             ],
@@ -546,4 +679,84 @@ class HomeScreen extends ConsumerWidget {
       ),
     );
   }
+}
+
+class _StaggeredItem extends StatefulWidget {
+  final Widget child;
+  final int index;
+
+  const _StaggeredItem({
+    required this.child,
+    required this.index,
+  });
+
+  @override
+  State<_StaggeredItem> createState() => _StaggeredItemState();
+}
+
+class _StaggeredItemState extends State<_StaggeredItem> {
+  bool _visible = false;
+
+  @override
+  void initState() {
+    super.initState();
+    Future.delayed(Duration(milliseconds: widget.index * 50), () {
+      if (mounted) {
+        setState(() {
+          _visible = true;
+        });
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedOpacity(
+      opacity: _visible ? 1.0 : 0.0,
+      duration: const Duration(milliseconds: 400),
+      curve: Curves.easeOutCubic,
+      child: AnimatedSlide(
+        offset: _visible ? Offset.zero : const Offset(0, 0.2),
+        duration: const Duration(milliseconds: 400),
+        curve: Curves.easeOutCubic,
+        child: widget.child,
+      ),
+    );
+  }
+}
+
+class DashedCirclePainter extends CustomPainter {
+  final Color color;
+  DashedCirclePainter({required this.color});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..strokeWidth = 2
+      ..style = PaintingStyle.stroke;
+    
+    final radius = size.width / 2;
+    final center = Offset(radius, radius);
+    
+    final dashWidth = 8.0;
+    final dashSpace = 6.0;
+    final circumference = 2 * 3.14159 * radius;
+    final dashCount = (circumference / (dashWidth + dashSpace)).floor();
+    
+    for (int i = 0; i < dashCount; i++) {
+      final startAngle = (i * (dashWidth + dashSpace)) / radius;
+      final sweepAngle = dashWidth / radius;
+      canvas.drawArc(
+        Rect.fromCircle(center: center, radius: radius),
+        startAngle,
+        sweepAngle,
+        false,
+        paint,
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
