@@ -84,6 +84,7 @@ class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
       themeMode: themeMode,
       theme: ThemeData(
         brightness: Brightness.light,
+        scaffoldBackgroundColor: AppColorScheme.light.background,
         colorScheme: ColorScheme.fromSeed(
           seedColor: accent.primary,
           brightness: Brightness.light,
@@ -92,11 +93,11 @@ class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
         textTheme: GoogleFonts.interTextTheme(
           ThemeData(brightness: Brightness.light).textTheme,
         ),
-        extensions: <ThemeExtension<dynamic>>[accent],
+        extensions: <ThemeExtension<dynamic>>[accent, AppColorScheme.light],
       ),
       darkTheme: ThemeData(
         brightness: Brightness.dark,
-        scaffoldBackgroundColor: AppColors.background,
+        scaffoldBackgroundColor: AppColorScheme.dark.background,
         colorScheme: ColorScheme.fromSeed(
           seedColor: accent.primary,
           brightness: Brightness.dark,
@@ -105,7 +106,7 @@ class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
         textTheme: GoogleFonts.interTextTheme(
           ThemeData(brightness: Brightness.dark).textTheme,
         ),
-        extensions: <ThemeExtension<dynamic>>[accent],
+        extensions: <ThemeExtension<dynamic>>[accent, AppColorScheme.dark],
       ),
       home: const HomeScreen(),
     );

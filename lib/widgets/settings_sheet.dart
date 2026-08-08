@@ -19,11 +19,12 @@ class SettingsSheet extends ConsumerWidget {
     final box = ref.watch(habitBoxProvider);
     final currentAccent = ref.watch(accentThemeProvider);
     final accent = Theme.of(context).extension<AppAccent>()!;
+    final cs = AppColorScheme.of(context);
 
     return Container(
       padding: const EdgeInsets.all(AppSpacing.xl),
       decoration: BoxDecoration(
-        color: AppColors.surfaceVariant,
+        color: cs.surfaceVariant,
         borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.sheet)),
       ),
       child: SingleChildScrollView(
@@ -36,7 +37,7 @@ class SettingsSheet extends ConsumerWidget {
               children: [
                 Row(
                   children: [
-                    const Icon(Icons.settings_rounded, color: AppColors.onSurface, size: 26),
+                    Icon(Icons.settings_rounded, color: cs.onSurface, size: 26),
                     const SizedBox(width: AppSpacing.md),
                     Text(
                       'Settings & Data',
@@ -45,7 +46,7 @@ class SettingsSheet extends ConsumerWidget {
                   ],
                 ),
                 IconButton(
-                  icon: const Icon(Icons.close, color: AppColors.onSurfaceMuted),
+                  icon: Icon(Icons.close, color: cs.onSurfaceMuted),
                   onPressed: () => Navigator.pop(context),
                 ),
               ],
@@ -55,7 +56,7 @@ class SettingsSheet extends ConsumerWidget {
             // Accent Theme Section
             Text(
               'Accent Theme',
-              style: AppTypography.labelSmall(color: AppColors.onSurfaceMuted),
+              style: AppTypography.labelSmall(color: cs.onSurfaceMuted),
             ),
             const SizedBox(height: AppSpacing.md),
             Row(
@@ -86,7 +87,7 @@ class SettingsSheet extends ConsumerWidget {
                             : null,
                       ),
                       child: isSelected
-                          ? const Icon(Icons.check, color: AppColors.onSurface, size: 24)
+                          ? Icon(Icons.check, color: cs.onSurface, size: 24)
                           : null,
                     ),
                   ),
@@ -98,7 +99,7 @@ class SettingsSheet extends ConsumerWidget {
             // Theme Mode Section
             Text(
               'Theme Mode',
-              style: AppTypography.labelSmall(color: AppColors.onSurfaceMuted),
+              style: AppTypography.labelSmall(color: cs.onSurfaceMuted),
             ),
             const SizedBox(height: AppSpacing.md),
             Center(
@@ -125,9 +126,9 @@ class SettingsSheet extends ConsumerWidget {
                   ref.read(themeModeProvider.notifier).setThemeMode(newSelection.first);
                 },
                 style: SegmentedButton.styleFrom(
-                  backgroundColor: AppColors.surface,
+                  backgroundColor: cs.surface,
                   selectedBackgroundColor: accent.primaryContainer,
-                  foregroundColor: AppColors.onSurface,
+                  foregroundColor: cs.onSurface,
                   selectedForegroundColor: accent.primary,
                 ),
               ),
@@ -137,22 +138,22 @@ class SettingsSheet extends ConsumerWidget {
             // Data & Backup Section
             Text(
               'Data & Backup',
-              style: AppTypography.labelSmall(color: AppColors.onSurfaceMuted),
+              style: AppTypography.labelSmall(color: cs.onSurfaceMuted),
             ),
             const SizedBox(height: AppSpacing.sm),
 
             // Export JSON Data
             ListTile(
               shape: RoundedRectangleBorder(borderRadius: AppRadius.cardRadius),
-              tileColor: AppColors.surface,
+              tileColor: cs.surface,
               leading: Icon(Icons.upload_file_rounded, color: accent.primary),
               title: Text(
                 'Export Data to JSON',
-                style: AppTypography.bodyMedium(color: AppColors.onSurface).copyWith(fontWeight: FontWeight.bold),
+                style: AppTypography.bodyMedium(color: cs.onSurface).copyWith(fontWeight: FontWeight.bold),
               ),
               subtitle: Text(
                 'Copy full habit history to clipboard',
-                style: AppTypography.labelSmall(color: AppColors.onSurfaceMuted),
+                style: AppTypography.labelSmall(color: cs.onSurfaceMuted),
               ),
               onTap: () {
                 final jsonString = BackupService.exportHabitsToJson(box);
@@ -161,7 +162,7 @@ class SettingsSheet extends ConsumerWidget {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     backgroundColor: accent.primary,
-                    content: Text('📋 Habit backup JSON copied to clipboard!', style: AppTypography.bodyMedium(color: AppColors.onSurface)),
+                    content: Text('📋 Habit backup JSON copied to clipboard!', style: AppTypography.bodyMedium(color: cs.onSurface)),
                   ),
                 );
               },
@@ -171,15 +172,15 @@ class SettingsSheet extends ConsumerWidget {
             // Import JSON Data
             ListTile(
               shape: RoundedRectangleBorder(borderRadius: AppRadius.cardRadius),
-              tileColor: AppColors.surface,
+              tileColor: cs.surface,
               leading: Icon(Icons.download_rounded, color: accent.primary),
               title: Text(
                 'Import Data from JSON',
-                style: AppTypography.bodyMedium(color: AppColors.onSurface).copyWith(fontWeight: FontWeight.bold),
+                style: AppTypography.bodyMedium(color: cs.onSurface).copyWith(fontWeight: FontWeight.bold),
               ),
               subtitle: Text(
                 'Restore habits from copied JSON string',
-                style: AppTypography.labelSmall(color: AppColors.onSurfaceMuted),
+                style: AppTypography.labelSmall(color: cs.onSurfaceMuted),
               ),
               onTap: () {
                 Navigator.pop(context);
@@ -191,22 +192,22 @@ class SettingsSheet extends ConsumerWidget {
             // Notifications Section
             Text(
               'Notifications',
-              style: AppTypography.labelSmall(color: AppColors.onSurfaceMuted),
+              style: AppTypography.labelSmall(color: cs.onSurfaceMuted),
             ),
             const SizedBox(height: AppSpacing.sm),
 
             // Test Local Push Notification
             ListTile(
               shape: RoundedRectangleBorder(borderRadius: AppRadius.cardRadius),
-              tileColor: AppColors.surface,
+              tileColor: cs.surface,
               leading: const Icon(Icons.notifications_active_rounded, color: Colors.amberAccent),
               title: Text(
                 'Send Test Push Notification',
-                style: AppTypography.bodyMedium(color: AppColors.onSurface).copyWith(fontWeight: FontWeight.bold),
+                style: AppTypography.bodyMedium(color: cs.onSurface).copyWith(fontWeight: FontWeight.bold),
               ),
               subtitle: Text(
                 'Test local notification system on your device',
-                style: AppTypography.labelSmall(color: AppColors.onSurfaceMuted),
+                style: AppTypography.labelSmall(color: cs.onSurfaceMuted),
               ),
               onTap: () async {
                 Navigator.pop(context);
@@ -221,8 +222,8 @@ class SettingsSheet extends ConsumerWidget {
             // App Info Footnote
             Center(
               child: Text(
-                'StreakFlow v1.0.0 • ENEX 386 Software Engineering',
-                style: AppTypography.labelSmall(color: AppColors.onSurfaceDim),
+                'StreakFlow v1.0.0',
+                style: AppTypography.labelSmall(color: cs.onSurfaceDim),
               ),
             ),
           ],
@@ -236,24 +237,26 @@ class SettingsSheet extends ConsumerWidget {
 
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: AppColors.surfaceVariant,
+      builder: (context) {
+        final cs = AppColorScheme.of(context);
+        return AlertDialog(
+        backgroundColor: cs.surfaceVariant,
         shape: RoundedRectangleBorder(borderRadius: AppRadius.sheetRadius),
-        title: Text('Paste Backup JSON', style: AppTypography.titleMedium(color: AppColors.onSurface)),
+        title: Text('Paste Backup JSON', style: AppTypography.titleMedium(color: cs.onSurface)),
         content: TextField(
           controller: controller,
           maxLines: 6,
-          style: AppTypography.bodyMedium(color: AppColors.onSurface),
+          style: AppTypography.bodyMedium(color: cs.onSurface),
           decoration: InputDecoration(
             hintText: 'Paste raw JSON string here...',
-            hintStyle: AppTypography.bodyMedium(color: AppColors.onSurfaceMuted),
+            hintStyle: AppTypography.bodyMedium(color: cs.onSurfaceMuted),
             border: const OutlineInputBorder(),
           ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('Cancel', style: AppTypography.bodyMedium(color: AppColors.onSurfaceMuted)),
+            child: Text('Cancel', style: AppTypography.bodyMedium(color: cs.onSurfaceMuted)),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
@@ -271,7 +274,7 @@ class SettingsSheet extends ConsumerWidget {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
                       backgroundColor: Colors.green.shade900,
-                      content: Text('✅ Successfully restored $count habits!', style: AppTypography.bodyMedium(color: AppColors.onSurface)),
+                      content: Text('✅ Successfully restored $count habits!', style: AppTypography.bodyMedium(color: cs.onSurface)),
                     ),
                   );
                 } catch (e) {
@@ -279,16 +282,17 @@ class SettingsSheet extends ConsumerWidget {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
                       backgroundColor: Colors.redAccent,
-                      content: Text('❌ Invalid JSON backup format.', style: AppTypography.bodyMedium(color: AppColors.onSurface)),
+                      content: Text('❌ Invalid JSON backup format.', style: AppTypography.bodyMedium(color: cs.onSurface)),
                     ),
                   );
                 }
               }
             },
-            child: Text('Import', style: AppTypography.bodyMedium(color: AppColors.onSurface)),
+            child: Text('Import', style: AppTypography.bodyMedium(color: cs.onSurface)),
           ),
         ],
-      ),
+        );
+      },
     );
   }
 }

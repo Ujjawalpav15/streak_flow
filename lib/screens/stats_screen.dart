@@ -39,6 +39,7 @@ class _StatsScreenState extends ConsumerState<StatsScreen>
   Widget build(BuildContext context) {
     final habits = ref.watch(habitsProvider);
     final accent = Theme.of(context).extension<AppAccent>()!;
+    final cs = AppColorScheme.of(context);
 
     int activeStreaks = habits.where((h) => h.currentStreak > 0).length;
     int highestStreak = habits.isEmpty
@@ -47,11 +48,11 @@ class _StatsScreenState extends ConsumerState<StatsScreen>
     int totalCheckIns = habits.fold(0, (sum, h) => sum + h.completedDates.length);
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: cs.background,
       appBar: AppBar(
-        backgroundColor: AppColors.background,
+        backgroundColor: cs.background,
         elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.white),
+        iconTheme: IconThemeData(color: cs.onSurface),
         title: Text(
           'Analytics & Calendars',
           style: AppTypography.headlineMedium(),
@@ -60,8 +61,8 @@ class _StatsScreenState extends ConsumerState<StatsScreen>
           controller: _tabController,
           indicatorColor: accent.primary,
           indicatorWeight: 3,
-          labelColor: Colors.white,
-          unselectedLabelColor: AppColors.onSurfaceMuted,
+          labelColor: cs.onSurface,
+          unselectedLabelColor: cs.onSurfaceMuted,
           labelStyle: AppTypography.bodyMedium(),
           tabs: const [
             Tab(icon: Icon(Icons.calendar_month_rounded), text: 'Monthly Calendar'),
@@ -84,7 +85,7 @@ class _StatsScreenState extends ConsumerState<StatsScreen>
                   Text(
                     'Add a habit from the home dashboard\nto start tracking your progress!',
                     textAlign: TextAlign.center,
-                    style: AppTypography.bodyMedium(color: AppColors.onSurfaceMuted),
+                    style: AppTypography.bodyMedium(color: cs.onSurfaceMuted),
                   ),
                 ],
               ),
@@ -96,11 +97,8 @@ class _StatsScreenState extends ConsumerState<StatsScreen>
                 ListView(
                   padding: const EdgeInsets.all(AppSpacing.lg),
                   children: [
-                    // Interactive Monthly Calendar View
                     InteractiveMonthlyCalendar(habits: habits),
                     const SizedBox(height: AppSpacing.lg),
-
-                    // Day-of-Week Analytics Chart
                     WeekdayAnalyticsChart(habits: habits),
                     const SizedBox(height: AppSpacing.lg),
                   ],
@@ -174,6 +172,7 @@ class _OverviewCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = AppColorScheme.of(context);
     return Expanded(
       child: TweenAnimationBuilder<double>(
         tween: Tween(begin: 0.0, end: 1.0),
@@ -204,13 +203,13 @@ class _OverviewCard extends StatelessWidget {
               const SizedBox(height: AppSpacing.xs),
               Text(
                 value,
-                style: AppTypography.streakCount(color: Colors.white).copyWith(fontSize: 20),
+                style: AppTypography.streakCount(color: cs.onSurface).copyWith(fontSize: 20),
               ),
               const SizedBox(height: AppSpacing.xs),
               Text(
                 label,
                 textAlign: TextAlign.center,
-                style: AppTypography.labelSmall(),
+                style: AppTypography.labelSmall(color: cs.onSurfaceMuted),
               ),
             ],
           ),
@@ -239,6 +238,7 @@ class _HabitStatCard extends StatelessWidget {
     final dataset = _buildDataset();
     final tierColor = StreakTiers.getTierColor(habit.currentStreak);
     final tierGlow = StreakTiers.getTierGlow(habit.currentStreak);
+    final cs = AppColorScheme.of(context);
 
     return TweenAnimationBuilder<double>(
       tween: Tween(begin: 0.0, end: 1.0),
@@ -254,7 +254,7 @@ class _HabitStatCard extends StatelessWidget {
         margin: const EdgeInsets.only(bottom: AppSpacing.xl),
         padding: const EdgeInsets.all(AppSpacing.lg),
         decoration: BoxDecoration(
-          color: AppColors.surface,
+          color: cs.surface,
           borderRadius: AppRadius.cardRadius,
           border: Border.all(
             color: tierColor.withValues(alpha: 0.15),
@@ -325,7 +325,7 @@ class _HabitStatCard extends StatelessWidget {
             // Heatmap Calendar
             Text(
               '90-Day Completion Heatmap',
-              style: AppTypography.labelSmall(),
+              style: AppTypography.labelSmall(color: cs.onSurfaceMuted),
             ),
             const SizedBox(height: AppSpacing.md),
             HeatMap(
@@ -333,8 +333,8 @@ class _HabitStatCard extends StatelessWidget {
               endDate: DateTime.now(),
               datasets: dataset,
               colorMode: ColorMode.color,
-              defaultColor: AppColors.surfaceVariant,
-              textColor: AppColors.onSurfaceMuted,
+              defaultColor: cs.surfaceVariant,
+              textColor: cs.onSurfaceMuted,
               showColorTip: false,
               showText: true,
               scrollable: true,
@@ -365,6 +365,7 @@ class _StatBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = AppColorScheme.of(context);
     return Expanded(
       child: Container(
         padding: const EdgeInsets.symmetric(
@@ -382,13 +383,13 @@ class _StatBadge extends StatelessWidget {
             const SizedBox(height: AppSpacing.xs),
             Text(
               value,
-              style: AppTypography.streakCount(color: Colors.white).copyWith(fontSize: 16),
+              style: AppTypography.streakCount(color: cs.onSurface).copyWith(fontSize: 16),
             ),
             const SizedBox(height: AppSpacing.xs),
             Text(
               label,
               textAlign: TextAlign.center,
-              style: AppTypography.labelSmall().copyWith(fontSize: 10),
+              style: AppTypography.labelSmall(color: cs.onSurfaceMuted).copyWith(fontSize: 10),
             ),
           ],
         ),

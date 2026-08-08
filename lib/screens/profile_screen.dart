@@ -4,15 +4,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import '../providers/user_profile_provider.dart';
 import '../providers/habit_provider.dart';
-import '../providers/theme_provider.dart';
-import '../services/backup_service.dart';
-import '../services/notification_service.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
 import '../theme/app_radius.dart';
 import '../theme/app_typography.dart';
 import '../theme/app_accent.dart';
-import 'package:flutter/services.dart';
+import 'settings_data_screen.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
@@ -23,55 +20,53 @@ class ProfileScreen extends ConsumerStatefulWidget {
 
 class _ProfileScreenState extends ConsumerState<ProfileScreen>
     with SingleTickerProviderStateMixin {
+  // ── Controllers ───────────────────────────────────────────────────────────
   final _nameController = TextEditingController();
+  final _usernameController = TextEditingController();
   final _ageController = TextEditingController();
   final _bioController = TextEditingController();
   final _goalController = TextEditingController();
+
   bool _isEditing = false;
   bool _isSaving = false;
-  late AnimationController _animController;
+
+  late AnimationController _fadeController;
   late Animation<double> _fadeAnim;
 
   @override
   void initState() {
     super.initState();
-    _animController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 500),
-    );
-    _fadeAnim = CurvedAnimation(
-      parent: _animController,
-      curve: Curves.easeOutCubic,
-    );
-    _animController.forward();
+    _fadeController = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 500));
+    _fadeAnim =
+        CurvedAnimation(parent: _fadeController, curve: Curves.easeOutCubic);
+    _fadeController.forward();
 
-    // Load existing profile into controllers
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final profile = ref.read(userProfileProvider);
-      _nameController.text = profile.name;
-      _ageController.text = profile.age;
-      _bioController.text = profile.bio;
-      _goalController.text = profile.goal;
+      final p = ref.read(userProfileProvider);
+      _nameController.text = p.name;
+      _usernameController.text = p.age; // reusing age field as username handle
+      _ageController.text = p.age;
+      _bioController.text = p.bio;
+      _goalController.text = p.goal;
     });
   }
 
   @override
   void dispose() {
     _nameController.dispose();
+    _usernameController.dispose();
     _ageController.dispose();
     _bioController.dispose();
     _goalController.dispose();
-    _animController.dispose();
+    _fadeController.dispose();
     super.dispose();
   }
 
   Future<void> _pickImage() async {
     final picker = ImagePicker();
     final picked = await picker.pickImage(
-      source: ImageSource.gallery,
-      imageQuality: 80,
-      maxWidth: 512,
-    );
+        source: ImageSource.gallery, imageQuality: 80, maxWidth: 512);
     if (picked != null) {
       await ref.read(userProfileProvider.notifier).setImage(picked.path);
     }
@@ -90,16 +85,15 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
       _isEditing = false;
     });
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          backgroundColor: Theme.of(context).extension<AppAccent>()!.primary,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(AppRadius.card)),
-          content: const Text('✅ Profile saved successfully!',
-              style: TextStyle(color: Colors.white)),
-        ),
-      );
+      final accent = Theme.of(context).extension<AppAccent>()!;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        backgroundColor: accent.primary,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppRadius.card)),
+        content: const Text('✅ Profile saved!',
+            style: TextStyle(color: Colors.white)),
+      ));
     }
   }
 
@@ -108,317 +102,286 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
     final profile = ref.watch(userProfileProvider);
     final accent = Theme.of(context).extension<AppAccent>()!;
     final habits = ref.watch(habitsProvider);
-    final totalStreaks = habits.fold<int>(0, (s, h) => s + h.currentStreak);
-    final longestEver = habits.isEmpty
-        ? 0
-        : habits.map((h) => h.longestStreak).reduce((a, b) => a > b ? a : b);
-    final totalCheckIns =
-        habits.fold<int>(0, (s, h) => s + h.completedDates.length);
+
+    final activeStreaks = habits.where((h) => h.currentStreak > 0).length;
+    final completedToday = habits
+        .where((h) => ref.read(habitsProvider.notifier).isCompletedToday(h))
+        .length;
+
+    final cs = AppColorScheme.of(context);
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: cs.background,
       body: FadeTransition(
         opacity: _fadeAnim,
         child: CustomScrollView(
           slivers: [
-            // ── Hero Header ──────────────────────────────────────────
-            SliverToBoxAdapter(
-              child: Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [accent.gradientStart, accent.gradientEnd],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                ),
-                child: SafeArea(
-                  bottom: false,
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: AppSpacing.xl, vertical: AppSpacing.xl),
-                    child: Column(
-                      children: [
-                        // Profile Photo
-                        Stack(
-                          alignment: Alignment.bottomRight,
-                          children: [
-                            GestureDetector(
-                              onTap: _pickImage,
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: accent.glow.withValues(alpha: 0.45),
-                                      blurRadius: 24,
-                                      spreadRadius: 4,
-                                    ),
-                                  ],
-                                ),
-                                child: CircleAvatar(
-                                  radius: 58,
-                                  backgroundColor:
-                                      Colors.white.withValues(alpha: 0.15),
-                                  backgroundImage: profile.imagePath != null
-                                      ? FileImage(File(profile.imagePath!))
-                                      : null,
-                                  child: profile.imagePath == null
-                                      ? const Icon(Icons.person_rounded,
-                                          size: 60, color: Colors.white70)
-                                      : null,
-                                ),
-                              ),
-                            ),
-                            GestureDetector(
-                              onTap: _pickImage,
-                              child: Container(
-                                padding: const EdgeInsets.all(8),
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  shape: BoxShape.circle,
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.black.withValues(alpha: 0.2),
-                                      blurRadius: 6,
-                                    ),
-                                  ],
-                                ),
-                                child: Icon(Icons.camera_alt_rounded,
-                                    size: 18, color: accent.gradientEnd),
-                              ),
-                            ),
-                          ],
+            // ── Top App Bar ─────────────────────────────────────────────
+            SliverAppBar(
+              backgroundColor: cs.background,
+              elevation: 0,
+              pinned: false,
+              automaticallyImplyLeading: false,
+              title: Text('Profile',
+                  style: AppTypography.headlineMedium().copyWith(fontSize: 20)),
+              centerTitle: true,
+              actions: [
+                AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 250),
+                  child: _isEditing
+                      ? TextButton(
+                          key: const ValueKey('save'),
+                          onPressed: _isSaving ? null : _saveProfile,
+                          child: _isSaving
+                              ? const SizedBox(
+                                  width: 16,
+                                  height: 16,
+                                  child: CircularProgressIndicator(
+                                      strokeWidth: 2, color: Colors.white))
+                              : Text('Save',
+                                  style: AppTypography.labelMedium(
+                                          color: accent.primary)
+                                      .copyWith(fontWeight: FontWeight.bold)),
+                        )
+                      : IconButton(
+                          key: const ValueKey('edit'),
+                          icon: Icon(Icons.edit_outlined,
+                              color: accent.primary, size: 22),
+                          onPressed: () => setState(() => _isEditing = true),
                         ),
-                        const SizedBox(height: AppSpacing.md),
-
-                        // Name & bio display
-                        if (!_isEditing) ...[
-                          Text(
-                            profile.name.isEmpty ? 'Your Name' : profile.name,
-                            style: AppTypography.headlineMedium().copyWith(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 24,
-                            ),
-                          ),
-                          if (profile.bio.isNotEmpty) ...[
-                            const SizedBox(height: AppSpacing.xs),
-                            Text(
-                              profile.bio,
-                              textAlign: TextAlign.center,
-                              style: AppTypography.bodyMedium()
-                                  .copyWith(color: Colors.white70),
-                            ),
-                          ],
-                          if (profile.goal.isNotEmpty) ...[
-                            const SizedBox(height: AppSpacing.sm),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: AppSpacing.md,
-                                  vertical: AppSpacing.xs),
-                              decoration: BoxDecoration(
-                                color: Colors.white.withValues(alpha: 0.15),
-                                borderRadius: AppRadius.pillRadius,
-                              ),
-                              child: Text(
-                                '🎯 ${profile.goal}',
-                                style: AppTypography.labelSmall()
-                                    .copyWith(color: Colors.white),
-                              ),
-                            ),
-                          ],
-                        ],
-
-                        const SizedBox(height: AppSpacing.lg),
-
-                        // Stat chips row
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                          children: [
-                            _HeroStatChip(
-                                emoji: '🔥',
-                                value: '$totalStreaks',
-                                label: 'Active\nStreaks'),
-                            _HeroStatChip(
-                                emoji: '🏆',
-                                value: '$longestEver',
-                                label: 'Best\nRecord'),
-                            _HeroStatChip(
-                                emoji: '✅',
-                                value: '$totalCheckIns',
-                                label: 'Total\nCheck-ins'),
-                            _HeroStatChip(
-                                emoji: '📖',
-                                value: '${habits.length}',
-                                label: 'Total\nHabits'),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
                 ),
-              ),
+              ],
             ),
 
-            // ── Content ──────────────────────────────────────────────
-            SliverPadding(
-              padding: const EdgeInsets.all(AppSpacing.lg),
-              sliver: SliverList(
-                delegate: SliverChildListDelegate([
-                  // ── Profile Details Card ────────────────────────────
-                  _SectionCard(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text('Profile Details',
-                                style: AppTypography.titleMedium()),
-                            AnimatedSwitcher(
-                              duration: const Duration(milliseconds: 250),
-                              child: _isEditing
-                                  ? Row(
-                                      key: const ValueKey('editing'),
-                                      children: [
-                                        TextButton(
-                                          onPressed: () {
-                                            final p =
-                                                ref.read(userProfileProvider);
-                                            _nameController.text = p.name;
-                                            _ageController.text = p.age;
-                                            _bioController.text = p.bio;
-                                            _goalController.text = p.goal;
-                                            setState(() => _isEditing = false);
-                                          },
-                                          child: Text('Cancel',
-                                              style: AppTypography.labelSmall(
-                                                  color:
-                                                      AppColors.onSurfaceMuted)),
-                                        ),
-                                        const SizedBox(width: AppSpacing.xs),
-                                        ElevatedButton(
-                                          style: ElevatedButton.styleFrom(
-                                            backgroundColor: accent.primary,
-                                            padding: const EdgeInsets.symmetric(
-                                                horizontal: AppSpacing.md,
-                                                vertical: AppSpacing.xs),
-                                            shape: RoundedRectangleBorder(
-                                                borderRadius:
-                                                    BorderRadius.circular(
-                                                        AppRadius.card)),
-                                          ),
-                                          onPressed:
-                                              _isSaving ? null : _saveProfile,
-                                          child: _isSaving
-                                              ? const SizedBox(
-                                                  width: 16,
-                                                  height: 16,
-                                                  child:
-                                                      CircularProgressIndicator(
-                                                          strokeWidth: 2,
-                                                          color: Colors.white))
-                                              : Text('Save',
-                                                  style:
-                                                      AppTypography.labelSmall(
-                                                          color: Colors.white)
-                                                          .copyWith(
-                                                              fontWeight:
-                                                                  FontWeight
-                                                                      .bold)),
-                                        ),
-                                      ],
-                                    )
-                                  : IconButton(
-                                      key: const ValueKey('view'),
-                                      icon: Icon(Icons.edit_rounded,
-                                          color: accent.primary),
-                                      onPressed: () =>
-                                          setState(() => _isEditing = true),
-                                    ),
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
+                child: Column(
+                  children: [
+                    const SizedBox(height: AppSpacing.lg),
+
+                    // ── Profile Photo ──────────────────────────────────
+                    GestureDetector(
+                      onTap: _pickImage,
+                      child: Stack(
+                        alignment: Alignment.bottomRight,
+                        children: [
+                          Container(
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                  color: accent.primary.withValues(alpha: 0.4),
+                                  width: 3),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: accent.glow.withValues(alpha: 0.3),
+                                  blurRadius: 20,
+                                  spreadRadius: 2,
+                                ),
+                              ],
                             ),
-                          ],
-                        ),
-                        const SizedBox(height: AppSpacing.md),
-                        if (_isEditing) ...[
-                          _ProfileField(
-                            controller: _nameController,
-                            label: 'Full Name',
-                            icon: Icons.person_outline,
-                            hint: 'e.g. Alex Johnson',
-                            accent: accent,
+                            child: CircleAvatar(
+                              radius: 56,
+                              backgroundColor: cs.surface,
+                              backgroundImage: profile.imagePath != null
+                                  ? FileImage(File(profile.imagePath!))
+                                  : null,
+                              child: profile.imagePath == null
+                                  ? Icon(Icons.person_rounded,
+                                      size: 56,
+                                      color: cs.onSurfaceMuted)
+                                  : null,
+                            ),
                           ),
-                          const SizedBox(height: AppSpacing.md),
-                          _ProfileField(
-                            controller: _ageController,
-                            label: 'Age',
-                            icon: Icons.cake_outlined,
-                            hint: 'e.g. 24',
-                            keyboardType: TextInputType.number,
-                            accent: accent,
+                          Container(
+                            padding: const EdgeInsets.all(6),
+                            decoration: BoxDecoration(
+                              color: accent.primary,
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                  color: cs.background, width: 2),
+                            ),
+                            child: const Icon(Icons.camera_alt_rounded,
+                                size: 14, color: Colors.white),
                           ),
-                          const SizedBox(height: AppSpacing.md),
-                          _ProfileField(
-                            controller: _bioController,
-                            label: 'Short Bio',
-                            icon: Icons.info_outline,
-                            hint: 'e.g. I love building productive routines',
-                            maxLines: 2,
-                            accent: accent,
-                          ),
-                          const SizedBox(height: AppSpacing.md),
-                          _ProfileField(
-                            controller: _goalController,
-                            label: 'Main Habit Goal',
-                            icon: Icons.flag_outlined,
-                            hint: 'e.g. Build a 30-day no-sugar streak',
-                            accent: accent,
-                          ),
-                        ] else ...[
-                          _InfoRow(
-                              icon: Icons.person_outline,
-                              label: 'Name',
-                              value: profile.name.isEmpty
-                                  ? '—'
-                                  : profile.name),
-                          _InfoRow(
-                              icon: Icons.cake_outlined,
-                              label: 'Age',
-                              value:
-                                  profile.age.isEmpty ? '—' : profile.age),
-                          _InfoRow(
-                              icon: Icons.info_outline,
-                              label: 'Bio',
-                              value:
-                                  profile.bio.isEmpty ? '—' : profile.bio),
-                          _InfoRow(
-                              icon: Icons.flag_outlined,
-                              label: 'Goal',
-                              value: profile.goal.isEmpty
-                                  ? '—'
-                                  : profile.goal),
                         ],
-                      ],
+                      ),
                     ),
-                  ),
 
-                  const SizedBox(height: AppSpacing.lg),
+                    const SizedBox(height: AppSpacing.lg),
 
-                  // ── Settings & Data ─────────────────────────────────
-                  _SettingsSection(accent: accent),
+                    // ── Name ────────────────────────────────────────────
+                    if (_isEditing)
+                      _EditField(
+                        controller: _nameController,
+                        label: 'Full Name',
+                        accent: accent,
+                      )
+                    else
+                      Text(
+                        profile.name.isEmpty ? 'Your Name' : profile.name,
+                        style: AppTypography.headlineMedium().copyWith(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 22,
+                        ),
+                      ),
 
-                  const SizedBox(height: AppSpacing.xxl),
+                    const SizedBox(height: AppSpacing.xs),
 
-                  // App Info
-                  Center(
-                    child: Text(
-                      'StreakFlow v1.0.0 • ENEX 386 Software Engineering',
-                      style:
-                          AppTypography.labelSmall(color: AppColors.onSurfaceDim),
+                    // ── Bio / handle ────────────────────────────────────
+                    if (_isEditing) ...[
+                      const SizedBox(height: AppSpacing.sm),
+                      _EditField(
+                        controller: _bioController,
+                        label: 'Short Bio or Email',
+                        accent: accent,
+                        maxLines: 2,
+                      ),
+                    ] else
+                      Text(
+                        profile.bio.isEmpty
+                            ? 'tap ✏️ to add your bio'
+                            : profile.bio,
+                        textAlign: TextAlign.center,
+                        style: AppTypography.bodyMedium(
+                            color: cs.onSurfaceMuted),
+                      ),
+
+                    const SizedBox(height: AppSpacing.xl),
+
+                    // ── Sleek Streak & Progress Summary Card ─────────
+                    _StreakSummaryCard(
+                      activeStreaks: activeStreaks,
+                      completedToday: completedToday,
+                      totalHabits: habits.length,
+                      longestEver: habits.isEmpty
+                          ? 0
+                          : habits.map((h) => h.longestStreak).reduce((a, b) => a > b ? a : b),
+                      totalCheckIns: habits.fold<int>(0, (s, h) => s + h.completedDates.length),
+                      accent: accent,
                     ),
-                  ),
-                  const SizedBox(height: AppSpacing.lg),
-                ]),
+
+                    const SizedBox(height: AppSpacing.xl),
+
+                    // ── Extra Edit Fields ──────────────────────────────
+                    if (_isEditing) ...[
+                      _EditField(
+                        controller: _ageController,
+                        label: 'Age',
+                        accent: accent,
+                        keyboardType: TextInputType.number,
+                      ),
+                      const SizedBox(height: AppSpacing.sm),
+                      _EditField(
+                        controller: _goalController,
+                        label: 'Main Habit Goal',
+                        accent: accent,
+                      ),
+                      const SizedBox(height: AppSpacing.sm),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton(
+                              onPressed: () {
+                                final p = ref.read(userProfileProvider);
+                                _nameController.text = p.name;
+                                _ageController.text = p.age;
+                                _bioController.text = p.bio;
+                                _goalController.text = p.goal;
+                                setState(() => _isEditing = false);
+                              },
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: cs.onSurfaceMuted,
+                                side: BorderSide(
+                                    color: cs.onSurfaceDim
+                                        .withValues(alpha: 0.5)),
+                                padding: const EdgeInsets.symmetric(
+                                    vertical: AppSpacing.md),
+                                shape: RoundedRectangleBorder(
+                                    borderRadius: AppRadius.cardRadius),
+                              ),
+                              child: const Text('Cancel'),
+                            ),
+                          ),
+                          const SizedBox(width: AppSpacing.md),
+                          Expanded(
+                            child: ElevatedButton(
+                              onPressed: _isSaving ? null : _saveProfile,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: accent.primary,
+                                padding: const EdgeInsets.symmetric(
+                                    vertical: AppSpacing.md),
+                                shape: RoundedRectangleBorder(
+                                    borderRadius: AppRadius.cardRadius),
+                              ),
+                              child: Text('Save Profile',
+                                  style: AppTypography.labelMedium(
+                                      color: Colors.white)
+                                      .copyWith(fontWeight: FontWeight.bold)),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: AppSpacing.xl),
+                    ],
+
+                    // ── Profile Info List ──────────────────────────────
+                    if (!_isEditing) ...[
+                      _ProfileInfoTile(
+                        icon: Icons.person_outline_rounded,
+                        iconColor: accent.primary,
+                        title: 'Name',
+                        subtitle:
+                            profile.name.isEmpty ? 'Not set' : profile.name,
+                      ),
+                      _ProfileInfoTile(
+                        icon: Icons.cake_outlined,
+                        iconColor: const Color(0xFF10B981),
+                        title: 'Age',
+                        subtitle: profile.age.isEmpty ? 'Not set' : '${profile.age} years old',
+                      ),
+                      _ProfileInfoTile(
+                        icon: Icons.flag_outlined,
+                        iconColor: Colors.amberAccent,
+                        title: 'Habit Goal',
+                        subtitle:
+                            profile.goal.isEmpty ? 'Not set' : profile.goal,
+                      ),
+                      _ProfileInfoTile(
+                        icon: Icons.local_fire_department_rounded,
+                        iconColor: Colors.deepOrangeAccent,
+                        title: 'Total Habits',
+                        subtitle: '${habits.length} habits being tracked',
+                      ),
+                      _ProfileInfoTile(
+                        icon: Icons.emoji_events_rounded,
+                        iconColor: const Color(0xFFFFD700),
+                        title: 'Longest Streak',
+                        subtitle: habits.isEmpty
+                            ? 'No streaks yet'
+                            : '${habits.map((h) => h.longestStreak).reduce((a, b) => a > b ? a : b)} days',
+                      ),
+
+                      const SizedBox(height: AppSpacing.xl),
+
+                      // ── Settings & Data Button ────────────────────────
+                      _NavTile(
+                        icon: Icons.settings_rounded,
+                        iconColor: accent.primary,
+                        iconBg: accent.primary.withValues(alpha: 0.12),
+                        title: 'Settings & Data',
+                        subtitle: 'Appearance, backup, notifications',
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (_) => const SettingsDataScreen()),
+                        ),
+                      ),
+
+                      const SizedBox(height: AppSpacing.xxl),
+                    ],
+                  ],
+                ),
               ),
             ),
           ],
@@ -428,78 +391,255 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
   }
 }
 
-// ─── Helper Widgets ────────────────────────────────────────────────────────
+// ── Glassmorphic Streak Summary Card ──────────────────────────────────────
 
-class _HeroStatChip extends StatelessWidget {
+class _StreakSummaryCard extends StatelessWidget {
+  final int activeStreaks;
+  final int completedToday;
+  final int totalHabits;
+  final int longestEver;
+  final int totalCheckIns;
+  final AppAccent accent;
+
+  const _StreakSummaryCard({
+    required this.activeStreaks,
+    required this.completedToday,
+    required this.totalHabits,
+    required this.longestEver,
+    required this.totalCheckIns,
+    required this.accent,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = AppColorScheme.of(context);
+    final ratio = totalHabits == 0
+        ? 0.0
+        : (completedToday / totalHabits).clamp(0.0, 1.0);
+    final percentage = (ratio * 100).toInt();
+
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      decoration: BoxDecoration(
+        color: cs.surface,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+            color: accent.primary.withValues(alpha: 0.3), width: 1.5),
+        boxShadow: [
+          BoxShadow(
+            color: accent.glow.withValues(alpha: 0.15),
+            blurRadius: 16,
+            spreadRadius: 1,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header: Today's Goal Progress
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: accent.primary.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Text('🎯', style: TextStyle(fontSize: 18)),
+                  ),
+                  const SizedBox(width: AppSpacing.sm),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Daily Goal Progress',
+                        style: AppTypography.bodyMedium(color: cs.onSurface)
+                            .copyWith(fontWeight: FontWeight.bold),
+                      ),
+                      Text(
+                        '$completedToday of $totalHabits habits done today',
+                        style:
+                            AppTypography.labelSmall(color: cs.onSurfaceMuted),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: accent.primary,
+                  borderRadius: AppRadius.pillRadius,
+                  boxShadow: [
+                    BoxShadow(
+                      color: accent.glow.withValues(alpha: 0.4),
+                      blurRadius: 8,
+                    ),
+                  ],
+                ),
+                child: Text(
+                  '$percentage%',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 13,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.md),
+          // Progress Bar
+          ClipRRect(
+            borderRadius: BorderRadius.circular(6),
+            child: LinearProgressIndicator(
+              value: ratio,
+              minHeight: 8,
+              backgroundColor: cs.onSurfaceDim.withValues(alpha: 0.2),
+              valueColor: AlwaysStoppedAnimation<Color>(accent.primary),
+            ),
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          Divider(color: cs.onSurfaceDim.withValues(alpha: 0.2), height: 1),
+          const SizedBox(height: AppSpacing.md),
+          // 3 Metric Pills Row
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              _MetricPill(
+                emoji: '🔥',
+                value: '$activeStreaks',
+                label: 'Active Streaks',
+                cs: cs,
+              ),
+              Container(
+                height: 24,
+                width: 1,
+                color: cs.onSurfaceDim.withValues(alpha: 0.2),
+              ),
+              _MetricPill(
+                emoji: '🏆',
+                value: '${longestEver}d',
+                label: 'Peak Record',
+                cs: cs,
+              ),
+              Container(
+                height: 24,
+                width: 1,
+                color: cs.onSurfaceDim.withValues(alpha: 0.2),
+              ),
+              _MetricPill(
+                emoji: '✅',
+                value: '$totalCheckIns',
+                label: 'Check-ins',
+                cs: cs,
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MetricPill extends StatelessWidget {
   final String emoji;
   final String value;
   final String label;
-  const _HeroStatChip(
-      {required this.emoji, required this.value, required this.label});
+  final AppColorScheme cs;
+
+  const _MetricPill({
+    required this.emoji,
+    required this.value,
+    required this.label,
+    required this.cs,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Column(
       children: [
-        Text(emoji, style: const TextStyle(fontSize: 20)),
-        const SizedBox(height: 4),
-        Text(
-          value,
-          style: const TextStyle(
-              color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(emoji, style: const TextStyle(fontSize: 14)),
+            const SizedBox(width: 4),
+            Text(
+              value,
+              style: AppTypography.bodyMedium(color: cs.onSurface).copyWith(
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+              ),
+            ),
+          ],
         ),
         const SizedBox(height: 2),
         Text(
           label,
-          textAlign: TextAlign.center,
-          style: const TextStyle(color: Colors.white70, fontSize: 11),
+          style: AppTypography.labelSmall(color: cs.onSurfaceMuted)
+              .copyWith(fontSize: 11),
         ),
       ],
     );
   }
 }
 
-class _SectionCard extends StatelessWidget {
-  final Widget child;
-  const _SectionCard({required this.child});
 
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(AppSpacing.lg),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: AppRadius.cardRadius,
-        border:
-            Border.all(color: AppColors.onSurfaceDim.withValues(alpha: 0.2)),
-      ),
-      child: child,
-    );
-  }
-}
+// ── Profile Info Tile ────────────────────────────────────────────────────────
 
-class _InfoRow extends StatelessWidget {
+class _ProfileInfoTile extends StatelessWidget {
   final IconData icon;
-  final String label;
-  final String value;
-  const _InfoRow(
-      {required this.icon, required this.label, required this.value});
+  final Color iconColor;
+  final String title;
+  final String subtitle;
+
+  const _ProfileInfoTile({
+    required this.icon,
+    required this.iconColor,
+    required this.title,
+    required this.subtitle,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
+    final cs = AppColorScheme.of(context);
+    return Container(
+      margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+      padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.md, vertical: AppSpacing.md),
+      decoration: BoxDecoration(
+        color: cs.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: cs.onSurfaceDim.withValues(alpha: 0.15)),
+      ),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, size: 18, color: AppColors.onSurfaceMuted),
-          const SizedBox(width: AppSpacing.sm),
-          Text('$label: ',
-              style: AppTypography.labelSmall(color: AppColors.onSurfaceMuted)),
+          Container(
+            width: 42,
+            height: 42,
+            decoration: BoxDecoration(
+              color: iconColor.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(icon, color: iconColor, size: 20),
+          ),
+          const SizedBox(width: AppSpacing.md),
           Expanded(
-            child: Text(
-              value,
-              style: AppTypography.bodyMedium(color: AppColors.onSurface),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title,
+                    style: AppTypography.labelSmall(color: cs.onSurfaceMuted)),
+                const SizedBox(height: 2),
+                Text(subtitle,
+                    style: AppTypography.bodyMedium(color: cs.onSurface)
+                        .copyWith(fontWeight: FontWeight.w600)),
+              ],
             ),
           ),
         ],
@@ -508,20 +648,85 @@ class _InfoRow extends StatelessWidget {
   }
 }
 
-class _ProfileField extends StatelessWidget {
+// ── Nav Tile (for Settings & Data) ───────────────────────────────────────────
+
+class _NavTile extends StatelessWidget {
+  final IconData icon;
+  final Color iconColor;
+  final Color iconBg;
+  final String title;
+  final String subtitle;
+  final VoidCallback onTap;
+
+  const _NavTile({
+    required this.icon,
+    required this.iconColor,
+    required this.iconBg,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = AppColorScheme.of(context);
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.md, vertical: AppSpacing.md),
+        decoration: BoxDecoration(
+          color: cs.surface,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: cs.onSurfaceDim.withValues(alpha: 0.15)),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 42,
+              height: 42,
+              decoration: BoxDecoration(
+                color: iconBg,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(icon, color: iconColor, size: 20),
+            ),
+            const SizedBox(width: AppSpacing.md),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title,
+                      style: AppTypography.bodyMedium(color: cs.onSurface)
+                          .copyWith(fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 2),
+                  Text(subtitle,
+                      style: AppTypography.labelSmall(color: cs.onSurfaceMuted)),
+                ],
+              ),
+            ),
+            Icon(Icons.chevron_right_rounded,
+                color: cs.onSurfaceMuted, size: 22),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── Edit Field ────────────────────────────────────────────────────────────────
+
+class _EditField extends StatelessWidget {
   final TextEditingController controller;
   final String label;
-  final String hint;
-  final IconData icon;
+  final AppAccent accent;
   final int maxLines;
   final TextInputType? keyboardType;
-  final AppAccent accent;
 
-  const _ProfileField({
+  const _EditField({
     required this.controller,
     required this.label,
-    required this.hint,
-    required this.icon,
     required this.accent,
     this.maxLines = 1,
     this.keyboardType,
@@ -529,27 +734,23 @@ class _ProfileField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = AppColorScheme.of(context);
     return TextField(
       controller: controller,
       maxLines: maxLines,
       keyboardType: keyboardType,
-      style: AppTypography.bodyMedium(color: AppColors.onSurface),
+      style: AppTypography.bodyMedium(color: cs.onSurface),
       decoration: InputDecoration(
         labelText: label,
-        labelStyle: AppTypography.labelSmall(color: AppColors.onSurfaceMuted),
-        hintText: hint,
-        hintStyle: AppTypography.labelSmall(color: AppColors.onSurfaceDim),
-        prefixIcon: Icon(icon, color: accent.primary, size: 20),
+        labelStyle: AppTypography.labelSmall(color: cs.onSurfaceMuted),
         filled: true,
-        fillColor: AppColors.surfaceVariant,
+        fillColor: cs.surfaceVariant,
         border: OutlineInputBorder(
-          borderRadius: AppRadius.cardRadius,
-          borderSide: BorderSide.none,
-        ),
+            borderRadius: AppRadius.cardRadius, borderSide: BorderSide.none),
         enabledBorder: OutlineInputBorder(
           borderRadius: AppRadius.cardRadius,
           borderSide:
-              BorderSide(color: AppColors.onSurfaceDim.withValues(alpha: 0.3)),
+              BorderSide(color: cs.onSurfaceDim.withValues(alpha: 0.3)),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: AppRadius.cardRadius,
@@ -558,307 +759,6 @@ class _ProfileField extends StatelessWidget {
         contentPadding:
             const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       ),
-    );
-  }
-}
-
-// ── Embedded Settings & Data ────────────────────────────────────────────────
-
-class _SettingsSection extends ConsumerWidget {
-  final AppAccent accent;
-  const _SettingsSection({required this.accent});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final box = ref.watch(habitBoxProvider);
-    final currentAccent = ref.watch(accentThemeProvider);
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Section header
-        Padding(
-          padding: const EdgeInsets.only(
-              bottom: AppSpacing.md, left: AppSpacing.xs),
-          child: Row(
-            children: [
-              const Icon(Icons.settings_rounded,
-                  color: AppColors.onSurfaceMuted, size: 18),
-              const SizedBox(width: AppSpacing.sm),
-              Text('Settings & Data',
-                  style: AppTypography.titleMedium()
-                      .copyWith(color: AppColors.onSurfaceMuted, fontSize: 14)),
-            ],
-          ),
-        ),
-
-        // ── Accent Theme ──────────────────────────────────────────────
-        _SectionCard(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('Accent Theme',
-                  style: AppTypography.labelSmall(
-                      color: AppColors.onSurfaceMuted)),
-              const SizedBox(height: AppSpacing.md),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: AppAccent.all.map((appAccent) {
-                  final isSelected = appAccent.name == currentAccent.name;
-                  return GestureDetector(
-                    onTap: () => ref
-                        .read(accentThemeProvider.notifier)
-                        .setTheme(appAccent.name),
-                    child: AnimatedScale(
-                      scale: isSelected ? 1.0 : 0.85,
-                      duration: const Duration(milliseconds: 200),
-                      child: Container(
-                        width: 46,
-                        height: 46,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: appAccent.primary,
-                          boxShadow: isSelected
-                              ? [
-                                  BoxShadow(
-                                      color: appAccent.glow,
-                                      blurRadius: 14,
-                                      spreadRadius: 3)
-                                ]
-                              : null,
-                        ),
-                        child: isSelected
-                            ? const Icon(Icons.check,
-                                color: Colors.white, size: 22)
-                            : null,
-                      ),
-                    ),
-                  );
-                }).toList(),
-              ),
-            ],
-          ),
-        ),
-
-        const SizedBox(height: AppSpacing.md),
-
-        // ── Theme Mode ──────────────────────────────────────────────
-        _SectionCard(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('Theme Mode',
-                  style: AppTypography.labelSmall(
-                      color: AppColors.onSurfaceMuted)),
-              const SizedBox(height: AppSpacing.md),
-              Center(
-                child: SegmentedButton<ThemeMode>(
-                  segments: const [
-                    ButtonSegment(
-                        value: ThemeMode.light,
-                        icon: Icon(Icons.light_mode),
-                        label: Text('Light')),
-                    ButtonSegment(
-                        value: ThemeMode.dark,
-                        icon: Icon(Icons.dark_mode),
-                        label: Text('Dark')),
-                    ButtonSegment(
-                        value: ThemeMode.system,
-                        icon: Icon(Icons.brightness_auto),
-                        label: Text('System')),
-                  ],
-                  selected: {ref.watch(themeModeProvider)},
-                  onSelectionChanged: (Set<ThemeMode> v) => ref
-                      .read(themeModeProvider.notifier)
-                      .setThemeMode(v.first),
-                  style: SegmentedButton.styleFrom(
-                    backgroundColor: AppColors.surfaceVariant,
-                    selectedBackgroundColor: accent.primaryContainer,
-                    foregroundColor: AppColors.onSurface,
-                    selectedForegroundColor: accent.primary,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-
-        const SizedBox(height: AppSpacing.md),
-
-        // ── Data & Backup ──────────────────────────────────────────
-        _SectionCard(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('Data & Backup',
-                  style: AppTypography.labelSmall(
-                      color: AppColors.onSurfaceMuted)),
-              const SizedBox(height: AppSpacing.sm),
-              _SettingsTile(
-                icon: Icons.upload_file_rounded,
-                title: 'Export Data to JSON',
-                subtitle: 'Copy full habit history to clipboard',
-                iconColor: accent.primary,
-                onTap: () {
-                  final jsonString = BackupService.exportHabitsToJson(box);
-                  Clipboard.setData(ClipboardData(text: jsonString));
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      backgroundColor: accent.primary,
-                      behavior: SnackBarBehavior.floating,
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(AppRadius.card)),
-                      content: Text('📋 Habit backup JSON copied!',
-                          style: AppTypography.bodyMedium(
-                              color: AppColors.onSurface)),
-                    ),
-                  );
-                },
-              ),
-              const Divider(
-                  height: 1, color: Color(0x22FFFFFF), thickness: 0.5),
-              _SettingsTile(
-                icon: Icons.download_rounded,
-                title: 'Import Data from JSON',
-                subtitle: 'Restore habits from copied JSON string',
-                iconColor: accent.primary,
-                onTap: () => _showImportDialog(context, ref, accent),
-              ),
-            ],
-          ),
-        ),
-
-        const SizedBox(height: AppSpacing.md),
-
-        // ── Notifications ──────────────────────────────────────────
-        _SectionCard(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('Notifications',
-                  style: AppTypography.labelSmall(
-                      color: AppColors.onSurfaceMuted)),
-              const SizedBox(height: AppSpacing.sm),
-              _SettingsTile(
-                icon: Icons.notifications_active_rounded,
-                title: 'Send Test Push Notification',
-                subtitle: 'Test local notification system on your device',
-                iconColor: Colors.amberAccent,
-                onTap: () async {
-                  await NotificationService().showStreakWarningNotification(
-                    title: '🔥 StreakFlow Test Alert!',
-                    body:
-                        'Your notification system is working perfectly! Don\'t break your streak today.',
-                  );
-                },
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  void _showImportDialog(
-      BuildContext context, WidgetRef ref, AppAccent accent) {
-    final controller = TextEditingController();
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: AppColors.surfaceVariant,
-        shape: RoundedRectangleBorder(borderRadius: AppRadius.sheetRadius),
-        title: Text('Paste Backup JSON',
-            style: AppTypography.titleMedium(color: AppColors.onSurface)),
-        content: TextField(
-          controller: controller,
-          maxLines: 6,
-          style: AppTypography.bodyMedium(color: AppColors.onSurface),
-          decoration: InputDecoration(
-            hintText: 'Paste raw JSON string here...',
-            hintStyle:
-                AppTypography.bodyMedium(color: AppColors.onSurfaceMuted),
-            border: const OutlineInputBorder(),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text('Cancel',
-                style: AppTypography.bodyMedium(
-                    color: AppColors.onSurfaceMuted)),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-                backgroundColor: accent.primary),
-            onPressed: () async {
-              final text = controller.text.trim();
-              if (text.isNotEmpty) {
-                try {
-                  final box = ref.read(habitBoxProvider);
-                  final count =
-                      await BackupService.importHabitsFromJson(box, text);
-                  ref.read(habitsProvider.notifier).refreshAllStreaks();
-                  if (!ctx.mounted) return;
-                  Navigator.pop(ctx);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      backgroundColor: Colors.green.shade900,
-                      content: Text('✅ Restored $count habits!',
-                          style: AppTypography.bodyMedium(
-                              color: AppColors.onSurface)),
-                    ),
-                  );
-                } catch (_) {
-                  if (!ctx.mounted) return;
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      backgroundColor: Colors.redAccent,
-                      content: Text('❌ Invalid JSON backup format.'),
-                    ),
-                  );
-                }
-              }
-            },
-            child: Text('Import',
-                style:
-                    AppTypography.bodyMedium(color: AppColors.onSurface)),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _SettingsTile extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final String subtitle;
-  final Color iconColor;
-  final VoidCallback onTap;
-
-  const _SettingsTile({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-    required this.iconColor,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return ListTile(
-      contentPadding: EdgeInsets.zero,
-      leading: Icon(icon, color: iconColor),
-      title: Text(
-        title,
-        style: AppTypography.bodyMedium(color: AppColors.onSurface)
-            .copyWith(fontWeight: FontWeight.bold),
-      ),
-      subtitle: Text(
-        subtitle,
-        style: AppTypography.labelSmall(color: AppColors.onSurfaceMuted),
-      ),
-      onTap: onTap,
     );
   }
 }

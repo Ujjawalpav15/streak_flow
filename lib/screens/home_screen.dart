@@ -66,6 +66,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final userProfile = ref.watch(userProfileProvider);
 
     final accent = Theme.of(context).extension<AppAccent>()!;
+    final cs = AppColorScheme.of(context);
 
     // Calculate Loss Aversion "At Risk" habits
     final uncompletedActiveHabits = allHabits.where((h) {
@@ -74,7 +75,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     }).toList();
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: cs.background,
       body: IndexedStack(
         index: _currentIndex == 1 ? 1 : (_currentIndex == 2 ? 2 : 0),
         children: [
@@ -169,20 +170,20 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   child: Container(
                     height: 42,
                     decoration: BoxDecoration(
-                      color: AppColors.surface,
+                      color: cs.surface,
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.white.withValues(alpha: 0.05), width: 0.5),
+                      border: Border.all(color: cs.outline, width: 0.5),
                     ),
                     child: TextField(
-                      style: AppTypography.bodyMedium(color: AppColors.onSurface),
+                      style: AppTypography.bodyMedium(color: cs.onSurface),
                       onChanged: (val) {
                         ref.read(searchQueryProvider.notifier).state = val;
                       },
                       decoration: InputDecoration(
                         hintText: 'Search habits...',
-                        hintStyle: AppTypography.bodyMedium(color: AppColors.onSurfaceMuted),
-                        prefixIcon: const Icon(Icons.search_rounded,
-                            color: Colors.white38, size: 20),
+                        hintStyle: AppTypography.bodyMedium(color: cs.onSurfaceMuted),
+                        prefixIcon: Icon(Icons.search_rounded,
+                            color: cs.onSurfaceDim, size: 20),
                         border: InputBorder.none,
                         contentPadding: const EdgeInsets.symmetric(vertical: 10),
                       ),
@@ -194,17 +195,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   height: 42,
                   padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
                   decoration: BoxDecoration(
-                    color: AppColors.surface,
+                    color: cs.surface,
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.white.withValues(alpha: 0.05), width: 0.5),
+                    border: Border.all(color: cs.outline, width: 0.5),
                   ),
                   child: DropdownButton<String>(
                     value: sortOption,
                     underline: const SizedBox(),
-                    dropdownColor: AppColors.surfaceVariant,
-                    icon: const Icon(Icons.sort_rounded,
-                        color: Colors.white70, size: 20),
-                    style: AppTypography.bodySmall(color: AppColors.onSurface),
+                    dropdownColor: cs.surfaceVariant,
+                    icon: Icon(Icons.sort_rounded,
+                        color: cs.onSurfaceMuted, size: 20),
+                    style: AppTypography.bodySmall(color: cs.onSurface),
                     items: [
                       'Default',
                       'Uncompleted First',
@@ -292,10 +293,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       ref.read(selectedCategoryProvider.notifier).state =
                           category;
                     },
-                    backgroundColor: AppColors.surfaceVariant,
+                    backgroundColor: cs.surfaceVariant,
                     selectedColor: accent.primary,
                     labelStyle: AppTypography.labelMedium(
-                      color: isSelected ? Colors.white : AppColors.onSurfaceMuted,
+                      color: isSelected ? Colors.white : cs.onSurfaceMuted,
                     ).copyWith(
                       fontWeight:
                           isSelected ? FontWeight.bold : FontWeight.normal,
@@ -305,7 +306,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       side: BorderSide(
                         color: isSelected
                             ? accent.primary
-                            : Colors.white.withValues(alpha: 0.05),
+                            : cs.outline,
                       ),
                     ),
                   ),
@@ -326,12 +327,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           children: [
                             CustomPaint(
                               size: const Size(100, 100),
-                              painter: DashedCirclePainter(color: Colors.white24),
+                              painter: DashedCirclePainter(color: cs.onSurfaceDim),
                             ),
-                            const Icon(
+                            Icon(
                               Icons.local_fire_department_outlined,
                               size: 48,
-                              color: Colors.white38,
+                              color: cs.onSurfaceDim,
                             ),
                             Positioned(
                               bottom: 0,
@@ -361,14 +362,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         Text(
                           'Tap Here To Start',
                           style: AppTypography.titleLarge().copyWith(
-                            color: Colors.white,
+                            color: cs.onSurface,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
                         const SizedBox(height: AppSpacing.xs),
                         Text(
                           'Create your first habit and start your journey.',
-                          style: AppTypography.bodyMedium().copyWith(color: Colors.white54),
+                          style: AppTypography.bodyMedium().copyWith(color: cs.onSurfaceMuted),
                         ),
                       ],
                     ),
@@ -395,22 +396,23 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       const ProfileScreen(),
     ],
   ),
-  bottomNavigationBar: _buildBottomNav(accent, allHabits),
+  bottomNavigationBar: _buildBottomNav(accent, cs, allHabits),
 );
   }
-  Widget _buildBottomNav(AppAccent accent, List<Habit> allHabits) {
+
+  Widget _buildBottomNav(AppAccent accent, AppColorScheme cs, List<Habit> allHabits) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: AppColors.background,
-        border: Border(top: BorderSide(color: Colors.white.withValues(alpha: 0.05))),
+        color: cs.background,
+        border: Border(top: BorderSide(color: cs.outline)),
       ),
       child: SafeArea(
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
-            _buildNavItem(0, Icons.local_fire_department, Icons.local_fire_department_outlined, accent),
-            _buildNavItem(1, Icons.calendar_month, Icons.calendar_month_outlined, accent),
+            _buildNavItem(0, Icons.local_fire_department, Icons.local_fire_department_outlined, accent, cs),
+            _buildNavItem(1, Icons.calendar_month, Icons.calendar_month_outlined, accent, cs),
             
             GestureDetector(
               onTap: () => _showAddOrEditHabitDialog(context, ref),
@@ -432,7 +434,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               ),
             ),
             
-            _buildNavItem(3, Icons.workspace_premium, Icons.workspace_premium_outlined, accent, isAction: true, onTap: () {
+            _buildNavItem(3, Icons.workspace_premium, Icons.workspace_premium_outlined, accent, cs, isAction: true, onTap: () {
               showModalBottomSheet(
                 context: context,
                 isScrollControlled: true,
@@ -440,14 +442,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 builder: (_) => MilestoneBadgesSheet(habits: allHabits),
               );
             }),
-            _buildNavItem(2, Icons.person, Icons.person_outline, accent),
+            _buildNavItem(2, Icons.person, Icons.person_outline, accent, cs),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildNavItem(int index, IconData activeIcon, IconData inactiveIcon, AppAccent accent, {bool isAction = false, VoidCallback? onTap}) {
+  Widget _buildNavItem(int index, IconData activeIcon, IconData inactiveIcon, AppAccent accent, AppColorScheme cs, {bool isAction = false, VoidCallback? onTap}) {
     final isActive = _currentIndex == index;
     return GestureDetector(
       onTap: () {
@@ -468,7 +470,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         ),
         child: Icon(
           isActive ? activeIcon : inactiveIcon,
-          color: isActive ? accent.primary : Colors.white54,
+          color: isActive ? accent.primary : cs.onSurfaceMuted,
           size: 26,
         ),
       ),
@@ -488,6 +490,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final categories = ['Fitness', 'Coding', 'Study', 'Health', 'General'];
 
     final accent = Theme.of(context).extension<AppAccent>()!;
+    final cs = AppColorScheme.of(context);
 
     showDialog(
       context: context,
@@ -496,13 +499,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           String? errorMessage;
 
           return AlertDialog(
-            backgroundColor: AppColors.surface,
+            backgroundColor: cs.surface,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(AppRadius.sheet),
             ),
             title: Text(
               isEditing ? 'Edit Habit' : 'Build New Habit',
-              style: AppTypography.headlineSmall(color: Colors.white),
+              style: AppTypography.headlineSmall(color: cs.onSurface),
             ),
             content: SingleChildScrollView(
               child: Column(
@@ -512,13 +515,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   // Habit Name
                   TextField(
                     controller: nameController,
-                    style: AppTypography.bodyLarge(color: Colors.white),
+                    style: AppTypography.bodyLarge(color: cs.onSurface),
                     decoration: InputDecoration(
                       hintText: 'Habit name (e.g. Daily Running)',
-                      hintStyle: AppTypography.bodyLarge(color: Colors.white38),
+                      hintStyle: AppTypography.bodyLarge(color: cs.onSurfaceDim),
                       errorText: errorMessage,
-                      enabledBorder: const UnderlineInputBorder(
-                        borderSide: BorderSide(color: Colors.white24),
+                      enabledBorder: UnderlineInputBorder(
+                        borderSide: BorderSide(color: cs.onSurfaceDim),
                       ),
                       focusedBorder: UnderlineInputBorder(
                         borderSide: BorderSide(color: accent.primary),
@@ -532,7 +535,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text('Select Icon Emoji',
-                          style: AppTypography.labelSmall(color: Colors.white54)),
+                          style: AppTypography.labelSmall(color: cs.onSurfaceMuted)),
                       Text(
                         'Active: ${emojiController.text}',
                         style: AppTypography.labelMedium(color: Colors.amberAccent)
@@ -558,7 +561,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             decoration: BoxDecoration(
                               color: isSelected
                                   ? accent.primary.withValues(alpha: 0.3)
-                                  : Colors.white.withValues(alpha: 0.05),
+                                  : cs.surfaceVariant,
                               borderRadius: BorderRadius.circular(10),
                               border: Border.all(
                                 color: isSelected
@@ -576,7 +579,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   // Custom Emoji Keyboard Input Field
                   TextField(
                     controller: emojiController,
-                    style: const TextStyle(color: Colors.white, fontSize: 18),
+                    style: TextStyle(color: cs.onSurface, fontSize: 18),
                     onChanged: (_) {
                       setDialogState(() {});
                     },
@@ -584,12 +587,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       labelText: 'Or type/paste custom emoji (+)',
                       labelStyle: AppTypography.labelSmall(color: accent.primary),
                       hintText: 'e.g. 🚴, 🎸, 🧗, 🥑, 🎮',
-                      hintStyle: AppTypography.labelSmall(color: Colors.white24),
+                      hintStyle: AppTypography.labelSmall(color: cs.onSurfaceDim),
                       contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                       prefixIcon: Icon(Icons.add_reaction_outlined, color: accent.primary, size: 20),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: Colors.white24),
+                        borderSide: BorderSide(color: cs.onSurfaceDim),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
@@ -601,23 +604,22 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
                   // Category Selector
                   Text('Category',
-                      style: AppTypography.labelSmall(color: Colors.white54)),
+                      style: AppTypography.labelSmall(color: cs.onSurfaceMuted)),
                   const SizedBox(height: AppSpacing.sm),
                   DropdownButtonFormField<String>(
                     initialValue: selectedCategory,
-                    dropdownColor: AppColors.surfaceVariant,
-                    style: AppTypography.bodyMedium(color: Colors.white),
+                    dropdownColor: cs.surfaceVariant,
+                    style: AppTypography.bodyMedium(color: cs.onSurface),
                     decoration: InputDecoration(
                       contentPadding: const EdgeInsets.symmetric(
                           horizontal: 12, vertical: 8),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: Colors.white24),
+                        borderSide: BorderSide(color: cs.onSurfaceDim),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide:
-                            BorderSide(color: accent.primary),
+                        borderSide: BorderSide(color: accent.primary),
                       ),
                     ),
                     items: categories.map((cat) {
@@ -641,7 +643,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               TextButton(
                 onPressed: () => Navigator.pop(context),
                 child: Text('Cancel',
-                    style: AppTypography.labelLarge(color: Colors.white54)),
+                    style: AppTypography.labelLarge(color: cs.onSurfaceMuted)),
               ),
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
@@ -745,8 +747,8 @@ class DashedCirclePainter extends CustomPainter {
     final radius = size.width / 2;
     final center = Offset(radius, radius);
     
-    final dashWidth = 8.0;
-    final dashSpace = 6.0;
+    const dashWidth = 8.0;
+    const dashSpace = 6.0;
     final circumference = 2 * 3.14159 * radius;
     final dashCount = (circumference / (dashWidth + dashSpace)).floor();
     

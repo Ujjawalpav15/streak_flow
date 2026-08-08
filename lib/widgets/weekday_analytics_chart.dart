@@ -25,6 +25,7 @@ class WeekdayAnalyticsChart extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final accent = Theme.of(context).extension<AppAccent>()!;
+    final cs = AppColorScheme.of(context);
     final counts = _calculateWeekdayCompletions();
     final maxCount = counts.values.isEmpty
         ? 1
@@ -53,9 +54,9 @@ class WeekdayAnalyticsChart extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: cs.surface,
         borderRadius: AppRadius.cardRadius,
-        border: Border.all(color: AppColors.onSurfaceDim.withValues(alpha: 0.3)),
+        border: Border.all(color: cs.onSurfaceDim.withValues(alpha: 0.3)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -131,7 +132,7 @@ class WeekdayAnalyticsChart extends StatelessWidget {
                             style: AppTypography.labelSmall(
                               color: isStrongest
                                   ? accent.glow
-                                  : AppColors.onSurfaceMuted,
+                                  : cs.onSurfaceMuted,
                             ).copyWith(fontWeight: FontWeight.bold),
                           ),
                         ),
@@ -175,7 +176,7 @@ class WeekdayAnalyticsChart extends StatelessWidget {
                           style: AppTypography.labelSmall(
                             color: isStrongest
                                 ? accent.glow
-                                : AppColors.onSurfaceMuted,
+                                : cs.onSurfaceMuted,
                           ).copyWith(
                             fontWeight: isStrongest
                                 ? FontWeight.bold

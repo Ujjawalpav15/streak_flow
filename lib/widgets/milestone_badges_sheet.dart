@@ -55,6 +55,7 @@ class _MilestoneBadgesSheetState extends State<MilestoneBadgesSheet>
   Widget build(BuildContext context) {
     final maxStreak = highestStreak;
     final accent = Theme.of(context).extension<AppAccent>()!;
+    final cs = AppColorScheme.of(context);
 
     final badges = [
       _BadgeInfo(
@@ -105,7 +106,7 @@ class _MilestoneBadgesSheetState extends State<MilestoneBadgesSheet>
           ),
           padding: const EdgeInsets.all(AppSpacing.xl),
           decoration: BoxDecoration(
-            color: AppColors.surfaceVariant,
+            color: cs.surfaceVariant,
             borderRadius: BorderRadius.vertical(
               top: Radius.circular(AppRadius.sheet),
             ),
@@ -129,7 +130,7 @@ class _MilestoneBadgesSheetState extends State<MilestoneBadgesSheet>
                     ],
                   ),
                   IconButton(
-                    icon: Icon(Icons.close, color: AppColors.onSurfaceMuted),
+                    icon: Icon(Icons.close, color: cs.onSurfaceMuted),
                     onPressed: () => Navigator.pop(context),
                   ),
                 ],
@@ -137,7 +138,7 @@ class _MilestoneBadgesSheetState extends State<MilestoneBadgesSheet>
               const SizedBox(height: AppSpacing.sm),
               Text(
                 'Your highest streak record: $maxStreak days 🔥',
-                style: AppTypography.bodyMedium(color: AppColors.onSurfaceMuted),
+                style: AppTypography.bodyMedium(color: cs.onSurfaceMuted),
               ),
               const SizedBox(height: AppSpacing.xl),
 
@@ -171,12 +172,12 @@ class _MilestoneBadgesSheetState extends State<MilestoneBadgesSheet>
                         decoration: BoxDecoration(
                           color: badge.unlocked
                               ? badge.tierColor.withValues(alpha: 0.12)
-                              : AppColors.surface,
+                              : cs.surface,
                           borderRadius: AppRadius.cardRadius,
                           border: Border.all(
                             color: badge.unlocked
                                 ? badge.tierColor.withValues(alpha: 0.6)
-                                : AppColors.onSurfaceDim,
+                                : cs.onSurfaceDim,
                             width: badge.unlocked ? 1.5 : 1.0,
                           ),
                           boxShadow: badge.unlocked
@@ -198,7 +199,7 @@ class _MilestoneBadgesSheetState extends State<MilestoneBadgesSheet>
                               decoration: BoxDecoration(
                                 color: badge.unlocked
                                     ? badge.tierColor.withValues(alpha: 0.2)
-                                    : AppColors.onSurfaceDim
+                                    : cs.onSurfaceDim
                                         .withValues(alpha: 0.2),
                                 shape: BoxShape.circle,
                                 boxShadow: badge.unlocked
@@ -235,8 +236,8 @@ class _MilestoneBadgesSheetState extends State<MilestoneBadgesSheet>
                                         badge.title,
                                         style: AppTypography.titleMedium(
                                           color: badge.unlocked
-                                              ? AppColors.onSurface
-                                              : AppColors.onSurfaceMuted,
+                                              ? cs.onSurface
+                                              : cs.onSurfaceMuted,
                                         ).copyWith(fontSize: 16),
                                       ),
                                       AnimatedContainer(
@@ -249,7 +250,7 @@ class _MilestoneBadgesSheetState extends State<MilestoneBadgesSheet>
                                         decoration: BoxDecoration(
                                           color: badge.unlocked
                                               ? badge.tierColor
-                                              : AppColors.onSurfaceDim,
+                                              : cs.onSurfaceDim,
                                           borderRadius: AppRadius.pillRadius,
                                         ),
                                         child: Text(
@@ -259,7 +260,7 @@ class _MilestoneBadgesSheetState extends State<MilestoneBadgesSheet>
                                           style: TextStyle(
                                             color: badge.unlocked
                                                 ? Colors.black
-                                                : AppColors.onSurfaceMuted,
+                                                : cs.onSurfaceMuted,
                                             fontSize: 10,
                                             fontWeight: FontWeight.bold,
                                           ),
@@ -285,7 +286,7 @@ class _MilestoneBadgesSheetState extends State<MilestoneBadgesSheet>
                                       builder: (context, animValue, _) {
                                         return LinearProgressIndicator(
                                           value: animValue,
-                                          backgroundColor: AppColors
+                                          backgroundColor: cs
                                               .onSurfaceDim
                                               .withValues(alpha: 0.3),
                                           valueColor:

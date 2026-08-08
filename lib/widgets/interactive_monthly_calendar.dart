@@ -55,6 +55,7 @@ class _InteractiveMonthlyCalendarState
   @override
   Widget build(BuildContext context) {
     final accent = Theme.of(context).extension<AppAccent>()!;
+    final cs = AppColorScheme.of(context);
     final daysInMonth =
         DateTime(_selectedMonth.year, _selectedMonth.month + 1, 0).day;
     final firstWeekday =
@@ -65,9 +66,9 @@ class _InteractiveMonthlyCalendarState
     return Container(
       padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: cs.surface,
         borderRadius: AppRadius.cardRadius,
-        border: Border.all(color: AppColors.onSurfaceDim.withValues(alpha: 0.3)),
+        border: Border.all(color: cs.onSurfaceDim.withValues(alpha: 0.3)),
       ),
       child: Column(
         children: [
@@ -77,7 +78,7 @@ class _InteractiveMonthlyCalendarState
             children: [
               IconButton(
                 icon: Icon(Icons.chevron_left_rounded,
-                    color: AppColors.onSurfaceMuted),
+                    color: cs.onSurfaceMuted),
                 onPressed: _previousMonth,
               ),
               AnimatedSwitcher(
@@ -105,7 +106,7 @@ class _InteractiveMonthlyCalendarState
               ),
               IconButton(
                 icon: Icon(Icons.chevron_right_rounded,
-                    color: AppColors.onSurfaceMuted),
+                    color: cs.onSurfaceMuted),
                 onPressed: _nextMonth,
               ),
             ],
@@ -177,7 +178,7 @@ class _InteractiveMonthlyCalendarState
                     : (completedHabits.length / totalHabits);
 
                 // Smooth color interpolation between not-done and accent color
-                Color cellColor = AppColors.onSurfaceDim.withValues(alpha: 0.15);
+                Color cellColor = cs.onSurfaceDim.withValues(alpha: 0.15);
                 if (completedHabits.isNotEmpty) {
                   cellColor = Color.lerp(
                     accent.gradientStart.withValues(alpha: 0.3),
@@ -228,8 +229,8 @@ class _InteractiveMonthlyCalendarState
                               color: isToday
                                   ? accent.glow
                                   : (completedHabits.isNotEmpty
-                                      ? Colors.white
-                                      : AppColors.onSurfaceMuted),
+                                      ? cs.onSurface
+                                      : cs.onSurfaceMuted),
                               fontWeight: isToday || completedHabits.isNotEmpty
                                   ? FontWeight.bold
                                   : FontWeight.normal,
@@ -273,13 +274,15 @@ class _InteractiveMonthlyCalendarState
 
     showModalBottomSheet(
       context: context,
-      backgroundColor: AppColors.surfaceVariant,
+      backgroundColor: AppColorScheme.of(context).surfaceVariant,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(
           top: Radius.circular(AppRadius.sheet),
         ),
       ),
-      builder: (context) => Container(
+      builder: (context) {
+        final cs = AppColorScheme.of(context);
+        return Container(
         padding: const EdgeInsets.all(AppSpacing.xl),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -293,7 +296,7 @@ class _InteractiveMonthlyCalendarState
                   style: AppTypography.headlineMedium().copyWith(fontSize: 20),
                 ),
                 IconButton(
-                  icon: Icon(Icons.close, color: AppColors.onSurfaceMuted),
+                  icon: Icon(Icons.close, color: cs.onSurfaceMuted),
                   onPressed: () => Navigator.pop(context),
                 ),
               ],
@@ -310,12 +313,12 @@ class _InteractiveMonthlyCalendarState
               decoration: BoxDecoration(
                 color: completedHabits.isNotEmpty
                     ? accent.primary.withValues(alpha: 0.15)
-                    : AppColors.onSurfaceDim.withValues(alpha: 0.2),
+                    : cs.onSurfaceDim.withValues(alpha: 0.2),
                 borderRadius: AppRadius.cardRadius,
                 border: Border.all(
                   color: completedHabits.isNotEmpty
                       ? accent.primary
-                      : AppColors.onSurfaceDim,
+                      : cs.onSurfaceDim,
                 ),
               ),
               child: Row(
@@ -344,7 +347,7 @@ class _InteractiveMonthlyCalendarState
                 padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
                 child: Text(
                   'No habits were marked complete on this date.',
-                  style: AppTypography.bodyMedium(color: AppColors.onSurfaceMuted),
+                  style: AppTypography.bodyMedium(color: cs.onSurfaceMuted),
                 ),
               )
             else
@@ -367,7 +370,8 @@ class _InteractiveMonthlyCalendarState
                   )),
           ],
         ),
-      ),
+        );
+      },
     );
   }
 }
