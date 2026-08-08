@@ -63,27 +63,34 @@ class WeekdayAnalyticsChart extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                '📊 Day-of-Week Breakdown',
-                style: AppTypography.titleMedium().copyWith(fontSize: 16),
+              Expanded(
+                child: Text(
+                  '📊 Day-of-Week Breakdown',
+                  style: AppTypography.titleMedium().copyWith(fontSize: 16),
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
+              const SizedBox(width: AppSpacing.sm),
               if (maxVal > 0)
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.sm,
-                    vertical: AppSpacing.xs,
-                  ),
-                  decoration: BoxDecoration(
-                    color: accent.primary.withValues(alpha: 0.15),
-                    borderRadius: AppRadius.pillRadius,
-                    border: Border.all(color: accent.primary),
-                  ),
-                  child: Text(
-                    '🔥 Strongest: ${dayNames[strongestWeekday - 1]}',
-                    style: AppTypography.labelSmall(color: accent.primary)
-                        .copyWith(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 10,
+                Flexible(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.sm,
+                      vertical: AppSpacing.xs,
+                    ),
+                    decoration: BoxDecoration(
+                      color: accent.primary.withValues(alpha: 0.15),
+                      borderRadius: AppRadius.pillRadius,
+                      border: Border.all(color: accent.primary),
+                    ),
+                    child: Text(
+                      '🔥 Strongest: ${dayNames[strongestWeekday - 1]}',
+                      style: AppTypography.labelSmall(color: accent.primary)
+                          .copyWith(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 10,
+                      ),
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
                 ),

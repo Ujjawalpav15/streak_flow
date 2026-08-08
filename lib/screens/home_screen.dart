@@ -1,11 +1,13 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/habit.dart';
 import '../providers/habit_provider.dart';
+import '../providers/user_profile_provider.dart';
 import '../widgets/habit_card.dart';
 import 'stats_screen.dart';
+import 'profile_screen.dart';
 import '../widgets/milestone_badges_sheet.dart';
-import '../widgets/settings_sheet.dart';
 
 import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
@@ -61,6 +63,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final allHabits = ref.watch(habitsProvider);
     final selectedCategory = ref.watch(selectedCategoryProvider);
     final sortOption = ref.watch(sortOptionProvider);
+    final userProfile = ref.watch(userProfileProvider);
 
     final accent = Theme.of(context).extension<AppAccent>()!;
 
@@ -73,7 +76,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       body: IndexedStack(
-        index: _currentIndex == 1 ? 1 : 0,
+        index: _currentIndex == 1 ? 1 : (_currentIndex == 2 ? 2 : 0),
         children: [
           Column(
             children: [
@@ -97,10 +100,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    CircleAvatar(
-                      radius: 20,
-                      backgroundColor: Colors.white.withValues(alpha: 0.2),
-                      child: const Icon(Icons.person, color: Colors.white),
+                    GestureDetector(
+                      onTap: () => setState(() => _currentIndex = 2),
+                      child: CircleAvatar(
+                        radius: 20,
+                        backgroundColor: Colors.white.withValues(alpha: 0.2),
+                        backgroundImage: userProfile.imagePath != null
+                            ? FileImage(File(userProfile.imagePath!))
+                            : null,
+                        child: userProfile.imagePath == null
+                            ? const Icon(Icons.person, color: Colors.white)
+                            : null,
+                      ),
                     ),
                     Row(
                       children: [
@@ -381,6 +392,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         ],
       ),
       const StatsScreen(),
+      const ProfileScreen(),
     ],
   ),
   bottomNavigationBar: _buildBottomNav(accent, allHabits),
@@ -428,13 +440,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 builder: (_) => MilestoneBadgesSheet(habits: allHabits),
               );
             }),
-            _buildNavItem(4, Icons.person, Icons.person_outline, accent, isAction: true, onTap: () {
-              showModalBottomSheet(
-                context: context,
-                backgroundColor: Colors.transparent,
-                builder: (_) => const SettingsSheet(),
-              );
-            }),
+            _buildNavItem(2, Icons.person, Icons.person_outline, accent),
           ],
         ),
       ),
