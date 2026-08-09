@@ -196,7 +196,7 @@ streak_app/
 
 ## 📄 Documentation
 
-For exhaustive technical documentation, data models, state flow diagrams, loss aversion psychology specs, and submission guidelines, see [`Details.md`](Details.md).
+For exhaustive technical documentation, data models, state flow diagrams, loss aversion psychology specs, and submission guidelines, see [`DETAILS.md`](DETAILS.md).
 
 ---
 
