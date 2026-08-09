@@ -1,45 +1,91 @@
-# ⚡ StreakFlow — Personal Habit Streak Tracker
+<div align="center">
 
-**StreakFlow** is a sleek, modern, offline-first personal habit streak tracking application built with **Flutter**, **Riverpod**, **SharedPreferences**, and **Hive** for Android.
+  <img src="assets/images/app_logo.svg" alt="StreakFlow Logo" width="128" height="128" />
 
-Designed around the psychological principle of **loss aversion** (similar to streak mechanics in Duolingo, Snapchat, and Clash Royale), StreakFlow motivates users to stay consistent with daily habits—like running, coding, studying, and exercising—by tapping into the desire not to break an active streak.
+  # ⚡ StreakFlow
 
----
+  **A Sleek, Offline-First Personal Habit Streak & Behavioral Consistency Tracker**
 
-## 🎨 Design System & Theme Engine
+  [![Flutter](https://img.shields.io/badge/Flutter-3.10%2B-02569B?style=for-the-badge&logo=flutter&logoColor=white)](https://flutter.dev)
+  [![Dart](https://img.shields.io/badge/Dart-3.0%2B-0175C2?style=for-the-badge&logo=dart&logoColor=white)](https://dart.dev)
+  [![Riverpod](https://img.shields.io/badge/State-Riverpod%202.5-000000?style=for-the-badge&logo=reactive-x&logoColor=white)](https://riverpod.dev)
+  [![Hive DB](https://img.shields.io/badge/Database-Hive%202.2-FF6F00?style=for-the-badge&logo=sqlite&logoColor=white)](https://pub.dev/packages/hive)
+  [![License](https://img.shields.io/badge/License-MIT-green.style=for-the-badge)](LICENSE)
 
-### 1. Dynamic Light, Dark & System Theme Modes
-StreakFlow includes a complete dynamic theme engine powered by Flutter `ThemeExtension<AppColorScheme>`:
-- **Light Theme Mode**: Warm off-white backgrounds (`#FFF9F2`), crisp white surface cards, dark readable typography (`#2B2118`), and soft borders (`#F0E4D4`).
-- **Dark Theme Mode**: Deep dark backgrounds (`#0B0E14`), surface elevation (`#161B26`), and high-contrast typography.
-- **System Mode**: Follows system-wide dark/light preferences automatically.
+  [Features](#-key-features) • [Tech Stack](#-technology-stack) • [Architecture](#-architecture) • [Getting Started](#-getting-started) • [Documentation](Details.md)
 
-### 2. Multiple Accent Theme Palettes
-Customize the application accent color dynamically:
-- 💜 **Cyber Violet** (`#8B5CF6`)
-- 💚 **Neon Emerald** (`#10B981`)
-- 💛 **Solar Amber** (`#F59E0B`)
-- ❤️ **Midnight Ruby** (`#EF4444`)
+</div>
 
 ---
 
-## 👤 Comprehensive User Profile & Customization
+## 🌟 Overview
 
-- **Profile Customization**: Personalize your profile with your Name, Age, Short Bio, Main Habit Goal, and Profile Image using `image_picker`.
-- **Top Bar Sync**: Your custom profile photo displays in the top-left header of the main dashboard for quick access to your profile.
-- **Glassmorphic Progress & Streak Summary**:
-  - **Daily Goal Progress**: Visual progress bar showing today's habit completion ratio & percentage badge.
-  - **Live Metrics**: Active Streaks count (`🔥`), Peak Record (`🏆`), and Total Check-ins (`✅`).
-- **Dedicated Settings & Data Page**: Accessible directly from the Profile page via a sleek chevron tile.
+**StreakFlow** is a modern, privacy-focused, offline-first habit tracking mobile application designed around the psychological principle of **loss aversion**. Built with Flutter and Riverpod, StreakFlow helps users build long-term daily habits—such as coding, workout routines, reading, and meditation—by leveraging gamified streak mechanics, visual flame tiers, milestone rewards, and interactive analytics.
 
 ---
 
-## 🏗️ Architecture & Layered Structure
+## 🔥 Key Features
+
+### 1. 🏆 Loss Aversion & Gamified Streak Tiers
+StreakFlow motivates consistency through dynamic Snapchat & Duolingo-style visual flame tiers:
+* 🟢 **1–6 Days**: Ember Flame (`🔥`)
+* 🟣 **7–29 Days**: Plasma Flame (`💜🔥`) — *First Spark Badge*
+* 🔱 **30–49 Days**: Golden Crown (`🔱🔥`) — *Monthly Warrior Badge*
+* 💎 **50–99 Days**: Diamond Cyan (`💎🔥`) — *Half-Century Legend Badge*
+* 👑 **100+ Days**: Mythic Ruby (`👑🔥`) — *Centurion Master Badge*
+* 🧊 **Streak Freeze Shields**: Protect active streaks during unexpected emergencies or busy days.
+* ⚠️ **"Streak at Risk!" Warning Banner**: Automatically alerts users in the evening for uncompleted active streaks.
+
+### 2. 🎨 Dynamic Theme Engine & Multiple Accents
+* **Light Theme Mode**: Warm off-white surface backgrounds (`#FFF9F2`), soft borders (`#F0E4D4`), and high contrast typography.
+* **Dark Theme Mode**: Deep dark surface canvas (`#0B0E14`), surface elevation (`#161B26`), and vibrant accents.
+* **System Mode**: Follows system-wide dark/light preferences automatically.
+* **4 Accent Swatches**: Dynamic theme customization with **Cyber Violet** (`#8B5CF6`), **Neon Emerald** (`#10B981`), **Solar Amber** (`#F59E0B`), and **Midnight Ruby** (`#EF4444`).
+
+### 3. 📊 Analytics & Interactive Calendar
+* **Monthly Grid Heatmap**: Interactive month switcher (`‹ August 2026 ›`) with freeze markers and completion history overlays.
+* **Day-of-Week Analytics Chart**: Monday–Sunday completion breakdown chart highlighting peak performance days.
+* **Milestone Badges Sheet**: Progress tracking for 7, 30, 50, and 100-day milestone unlock cards with celebration confetti dialogs.
+
+### 4. 👤 User Profile & Customization
+* Personalize name, age, short bio, main habit goal, and custom profile avatar via `image_picker`.
+* Profile avatar synced across top app header and profile screens.
+
+### 5. 🔍 Search, Multi-Mode Sorting & Emoji Input
+* Real-time search filter by habit title.
+* Multi-mode sorting (*Default*, *Uncompleted First*, *Highest Streak*, *Longest Record*, *Alphabetical*).
+* Custom Emoji Picker Keyboard + Quick preset chips.
+
+### 6. 🔒 100% Local & Privacy-First Data Management
+* **Offline Storage**: Powered by Hive NoSQL database and SharedPreferences. Zero external tracking or required cloud login.
+* **JSON Backup & Restore**: One-tap export of full habit data to clipboard and instant JSON import restoration.
+* **Local Evening Reminders**: Daily notifications scheduled via `flutter_local_notifications`.
+
+---
+
+## 🛠️ Technology Stack
+
+| Layer | Technology / Package | Purpose |
+| :--- | :--- | :--- |
+| **Framework** | Flutter (Dart `^3.10.3`) | Cross-platform mobile app SDK |
+| **State Management** | `flutter_riverpod ^2.5.1` | Reactive, compile-safe state providers |
+| **Local Database** | `hive ^2.2.3` & `hive_flutter` | Lightweight, blazingly fast NoSQL key-value database |
+| **Key-Value Store** | `shared_preferences ^2.5.5` | User preferences, theme settings, profile data |
+| **Vector Graphics** | `flutter_svg ^2.0.10` | High-res SVG rendering for logos & brand iconography |
+| **Typography** | `google_fonts ^6.1.0` | Inter font typography scale |
+| **Media Selection** | `image_picker ^1.2.3` | User profile avatar photo selection |
+| **Local Alerts** | `flutter_local_notifications ^17.0.0` | Scheduled daily push notifications |
+
+---
+
+## 🏗️ Architecture
+
+StreakFlow follows a clean, modular **Layered Architecture**:
 
 ```text
 +---------------------------------------------------------------------------------+
 |                                PRESENTATION LAYER                               |
-| HomeScreen | StatsScreen | ProfileScreen | SettingsDataScreen                  |
+| SplashScreen | HomeScreen | StatsScreen | ProfileScreen | SettingsDataScreen   |
 | InteractiveMonthlyCalendar | WeekdayAnalyticsChart | MilestoneBadgesSheet       |
 | HabitCard | CelebrationDialog | GlassmorphicStreakSummaryCard                   |
 +---------------------------------------------------------------------------------+
@@ -68,71 +114,65 @@ Customize the application accent color dynamically:
 
 ---
 
-## 📝 Completed Features & Implementation Log
+## 📂 Project Directory Structure
 
-- [x] **Core Database & Persistence**: Hive database (`HabitAdapter`) storing habit ID, name, icon, current/longest streaks, completed dates, categories, and streak freezes.
-- [x] **User Profile System**: Riverpod stateNotifier + SharedPreferences for profile name, age, bio, goal, and profile photo selection via `image_picker`.
-- [x] **Glassmorphic Summary Card**: Replaced blocky stat squares with a sleek glassmorphic card with a daily completion progress bar, active streak count, and peak record metrics.
-- [x] **Full Light & Dark Theme Support**: Dynamic theme system (`AppColorScheme`) supporting Light, Dark, and System Auto modes across every screen, widget, dialog, and bottom sheet.
-- [x] **Multiple Accent Colors**: Swatch picker for Cyber Violet, Neon Emerald, Solar Amber, and Midnight Ruby accent themes.
-- [x] **Dedicated Settings & Data Screen**: Pushed as a clean secondary screen containing theme options, backup tools, and test notifications.
-- [x] **Loss Aversion Gaming Mechanics**:
-  - Snapchat / Duolingo style flame tiers (Ember `🔥`, Plasma `💜🔥`, Golden Crown `🔱🔥`, Diamond `💎🔥`, Mythic Ruby `👑🔥`).
-  - "Streak at Risk!" warning banner for uncompleted habits.
-  - Streak Freeze shields (`🧊`) to protect missed streaks.
-- [x] **Interactive Monthly Grid Calendar**: Month switcher with day history bottom sheet and completion/freeze markers.
-- [x] **Day-of-Week Analytics Chart**: Mon–Sun completion breakdown chart highlighting your strongest day.
-- [x] **Custom Emoji Keyboard System**: Quick preset chips + custom emoji keyboard input field.
-- [x] **Milestone Unlock Badges & Confetti**: Staggered milestone cards (7, 30, 50, 100 days) + celebratory confetti overlay dialog.
-- [x] **Search & Multi-Mode Sorting**: Real-time search + sorting (*Default*, *Uncompleted First*, *Highest Streak*, *Longest Record*, *Alphabetical*).
-- [x] **Offline Data Backup & Restore**: Export full habit history as JSON string to clipboard; import and restore from JSON string.
-- [x] **Local Push Notifications**: `flutter_local_notifications` daily evening reminders & on-demand test notifications.
-- [x] **Clean Code Verification**: 100% clean `flutter analyze` score (0 errors, 0 warnings).
-
----
-
-## 🔥 Key Features Summary
-
-1. **Snapchat / Duolingo Style Streak Tiers**:
-   - 🟢 **1–6 Days**: Ember Flame (`🔥`)
-   - 🟣 **7–29 Days**: Plasma Flame (`💜🔥`) — *First Spark Badge*
-   - 🔱 **30–49 Days**: Golden Crown (`🔱🔥`) — *Monthly Warrior Badge*
-   - 💎 **50–99 Days**: Diamond Cyan (`💎🔥`) — *Half-Century Legend Badge*
-   - 👑 **100+ Days**: Mythic Ruby (`👑🔥`) — *Centurion Master Badge*
-2. **Dynamic Light & Dark Themes**:
-   - Toggle seamlessly between Light Mode, Dark Mode, or System Auto with custom card surfaces, background colors, and typography readability.
-3. **Personal User Profile & Photo**:
-   - Edit name, age, short bio, and main habit goal. Upload a profile photo via `image_picker` synced across the profile and home header.
-4. **Interactive Monthly Grid Calendar**:
-   - Month switcher (`‹ August 2026 ›`) with day status indicators (`🧊` freeze, glowing completion markers). Tap any date cell to inspect habits completed on that date.
-5. **Day-of-Week Analytics Chart**:
-   - Staggered bar chart displaying completion breakdown across Monday through Sunday.
-6. **"Streak at Risk!" Warning Banner**:
-   - Automatically detects active streaks uncompleted in the evening and alerts you before midnight.
-7. **Streak Freeze Shields (Duolingo Style)**:
-   - Provides freeze shields (`🧊`) per habit to protect streaks during unexpected emergencies.
-8. **Milestone Confetti Celebrations**:
-   - Elastic bounce dialog with custom particle painter confetti animations when reaching milestone streaks (7, 30, 50, 100 days).
-9. **Offline JSON Backup & Restore**:
-   - Export full habit history to clipboard as JSON or restore from JSON string without external servers.
+```text
+streak_app/
+├── assets/
+│   └── images/
+│       ├── app_logo.svg         # Clean vector brand logo
+│       └── app_logo.png         # High-res 512x512 PNG app icon
+├── lib/
+│   ├── main.dart                # App entry point & Hive initialization
+│   ├── models/                  # Hive TypeAdapters & Data Classes
+│   │   ├── habit.dart
+│   │   └── user_profile.dart
+│   ├── providers/               # Riverpod StateNotifiers & Providers
+│   │   ├── habit_provider.dart
+│   │   ├── theme_provider.dart
+│   │   └── user_profile_provider.dart
+│   ├── screens/                 # Application Screens
+│   │   ├── splash_screen.dart
+│   │   ├── home_screen.dart
+│   │   ├── stats_screen.dart
+│   │   ├── profile_screen.dart
+│   │   └── settings_data_screen.dart
+│   ├── services/                # Backup, Notifications & Utilities
+│   │   ├── backup_service.dart
+│   │   └── notification_service.dart
+│   ├── theme/                   # Dynamic Theme System
+│   │   ├── app_colors.dart
+│   │   ├── app_accent.dart
+│   │   ├── app_typography.dart
+│   │   ├── app_radius.dart
+│   │   ├── app_spacing.dart
+│   │   └── streak_tiers.dart
+│   └── widgets/                 # Reusable UI Components
+│       ├── habit_card.dart
+│       ├── milestone_badges_sheet.dart
+│       └── celebration_dialog.dart
+├── Details.md                   # Full Technical Project Documentation
+└── pubspec.yaml                 # Dependencies & asset declarations
+```
 
 ---
 
-## 🚀 Getting Started & Installation
+## ⚡ Getting Started
 
 ### Prerequisites
-- [Flutter SDK](https://flutter.dev) (`>=3.10.3`)
-- Dart SDK
-- Android Studio / VS Code with Flutter extension
+* [Flutter SDK](https://flutter.dev) (`>=3.10.3`)
+* Dart SDK (`^3.0.0`)
+* Android Studio / VS Code with Flutter extensions
 
 ### Build & Run Instructions
 
-1. **Navigate to Project Directory:**
+1. **Clone the Repository:**
    ```bash
+   git clone https://github.com/your-username/streak_app.git
    cd streak_app
    ```
 
-2. **Fetch Dependencies:**
+2. **Install Dependencies:**
    ```bash
    flutter pub get
    ```
@@ -142,12 +182,24 @@ Customize the application accent color dynamically:
    flutter pub run build_runner build --delete-conflicting-outputs
    ```
 
-4. **Launch on Connected Android Device or Emulator:**
+4. **Generate Native Launcher Icons (Optional):**
+   ```bash
+   dart run flutter_launcher_icons
+   ```
+
+5. **Run the Application:**
    ```bash
    flutter run
    ```
 
 ---
 
+## 📄 Documentation
+
+For exhaustive technical documentation, data models, state flow diagrams, loss aversion psychology specs, and submission guidelines, see [`Details.md`](Details.md).
+
+---
+
 ## 📜 License
-Personal open-source habit tracking project. Built with Flutter.
+
+This project is open-source under the [MIT License](LICENSE).

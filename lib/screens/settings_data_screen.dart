@@ -10,6 +10,7 @@ import '../theme/app_spacing.dart';
 import '../theme/app_radius.dart';
 import '../theme/app_typography.dart';
 import '../theme/app_accent.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 class SettingsDataScreen extends ConsumerWidget {
   const SettingsDataScreen({super.key});
@@ -211,11 +212,30 @@ class SettingsDataScreen extends ConsumerWidget {
 
             const SizedBox(height: AppSpacing.xxl),
             Center(
-              child: Text(
-                'StreakFlow v1.0.0',
-                style:
-                    AppTypography.labelSmall(color: cs.onSurfaceDim),
-                textAlign: TextAlign.center,
+              child: Column(
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(16),
+                    child: SvgPicture.asset(
+                      'assets/images/app_logo.svg',
+                      width: 64,
+                      height: 64,
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.xs),
+                  Text(
+                    'StreakFlow',
+                    style: AppTypography.titleMedium(color: cs.onSurface).copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    'Version 1.0.0 • Personal Habit Tracker',
+                    style: AppTypography.labelSmall(color: cs.onSurfaceMuted),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
               ),
             ),
             const SizedBox(height: AppSpacing.lg),

@@ -14,6 +14,7 @@ import '../theme/app_spacing.dart';
 import '../theme/app_radius.dart';
 import '../theme/app_typography.dart';
 import '../theme/app_accent.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 final searchQueryProvider = StateProvider<String>((ref) => '');
 final sortOptionProvider = StateProvider<String>((ref) => 'Default');
@@ -101,18 +102,44 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    GestureDetector(
-                      onTap: () => setState(() => _currentIndex = 2),
-                      child: CircleAvatar(
-                        radius: 20,
-                        backgroundColor: Colors.white.withValues(alpha: 0.2),
-                        backgroundImage: userProfile.imagePath != null
-                            ? FileImage(File(userProfile.imagePath!))
-                            : null,
-                        child: userProfile.imagePath == null
-                            ? const Icon(Icons.person, color: Colors.white)
-                            : null,
-                      ),
+                    Row(
+                      children: [
+                        GestureDetector(
+                          onTap: () => setState(() => _currentIndex = 2),
+                          child: CircleAvatar(
+                            radius: 20,
+                            backgroundColor: Colors.white.withValues(alpha: 0.2),
+                            backgroundImage: userProfile.imagePath != null
+                                ? FileImage(File(userProfile.imagePath!))
+                                : null,
+                            child: userProfile.imagePath == null
+                                ? const Icon(Icons.person, color: Colors.white)
+                                : null,
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Row(
+                          children: [
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(8),
+                              child: SvgPicture.asset(
+                                'assets/images/app_logo.svg',
+                                width: 34,
+                                height: 34,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              'StreakFlow',
+                              style: AppTypography.titleMedium(color: Colors.white).copyWith(
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: -0.3,
+                                fontSize: 18,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
                     Row(
                       children: [

@@ -5,7 +5,7 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'models/habit.dart';
 import 'providers/habit_provider.dart';
 import 'providers/theme_provider.dart';
-import 'screens/home_screen.dart';
+import 'screens/splash_screen.dart';
 import 'services/notification_service.dart';
 import 'theme/app_colors.dart';
 
@@ -108,7 +108,7 @@ class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
         ),
         extensions: <ThemeExtension<dynamic>>[accent, AppColorScheme.dark],
       ),
-      home: const HomeScreen(),
+      home: const SplashScreen(),
     );
   }
 }
