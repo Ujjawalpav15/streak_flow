@@ -1,4 +1,7 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:timezone/timezone.dart' as tz;
+import 'package:timezone/data/latest_all.dart' as tz;
 
 class NotificationService {
   static final NotificationService _instance = NotificationService._internal();
@@ -12,6 +15,8 @@ class NotificationService {
 
   Future<void> init() async {
     if (_initialized) return;
+
+    tz.initializeTimeZones();
 
     const androidSettings =
         AndroidInitializationSettings('@mipmap/ic_launcher');
@@ -37,6 +42,19 @@ class NotificationService {
     if (androidImplementation != null) {
       await androidImplementation.requestNotificationsPermission();
     }
+  }
+
+  /// Returns the next occurrence of [hour]:[minute] in local time.
+  /// If that time has already passed today, it returns tomorrow's instance.
+  tz.TZDateTime _nextInstanceOfTime(int hour, int minute) {
+    final location = tz.local;
+    final now = tz.TZDateTime.now(location);
+    var scheduled =
+        tz.TZDateTime(location, now.year, now.month, now.day, hour, minute);
+    if (scheduled.isBefore(now)) {
+      scheduled = scheduled.add(const Duration(days: 1));
+    }
+    return scheduled;
   }
 
   /// Show an instant reminder notification (e.g. Streak at risk!)
@@ -68,18 +86,24 @@ class NotificationService {
     );
   }
 
-  /// Schedule a daily recurring evening reminder to protect streaks
+  /// Schedule a daily recurring evening reminder to protect streaks.
+  /// Fires at [hour]:[minute] local time every day (default 20:00 / 8 PM).
   Future<void> scheduleDailyEveningReminder({
     int id = 100,
     String title = '🔥 Protect Your Habit Streaks!',
-    String body = 'Don\'t break your momentum! Check off today\'s habits before midnight.',
+    String body =
+        "Don't break your momentum! Check off today's habits before midnight.",
+    int hour = 20,
+    int minute = 0,
   }) async {
     try {
       await init();
+
       const androidDetails = AndroidNotificationDetails(
         'daily_streak_reminder',
         'Daily Habit Reminders',
-        channelDescription: 'Daily evening push notifications to maintain habit streaks',
+        channelDescription:
+            'Daily evening push notifications to maintain habit streaks',
         importance: Importance.high,
         priority: Priority.high,
         icon: '@mipmap/ic_launcher',
@@ -90,16 +114,19 @@ class NotificationService {
         iOS: DarwinNotificationDetails(),
       );
 
-      await _notificationsPlugin.periodicallyShow(
+      await _notificationsPlugin.zonedSchedule(
         id,
         title,
         body,
-        RepeatInterval.daily,
+        _nextInstanceOfTime(hour, minute),
         notificationDetails,
-        androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+        uiLocalNotificationDateInterpretation:
+            UILocalNotificationDateInterpretation.absoluteTime,
+        matchDateTimeComponents: DateTimeComponents.time, // repeats daily
       );
-    } catch (e) {
-      // Safe fallback if notifications fail on specific Android versions
+    } catch (e, st) {
+      debugPrint('[NotificationService] scheduleDailyEveningReminder failed: $e\n$st');
     }
   }
 }
